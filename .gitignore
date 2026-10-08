@@ -1,0 +1,38 @@
+# ==========================================
+# Proyecto Recon Facial
+# Archivos que no deben versionarse
+# ==========================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+
+# Entornos virtuales de Python
+.venv/
+venv/
+
+# --- Variables de entorno y secretos ---
+.env
+.env.*
+!.env.example
+
+# --- Pruebas y cobertura ---
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Herramientas de calidad ---
+.ruff_cache/
+
+# --- Node.js / frontend ---
+node_modules/
+dist/
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+
+# Metadatos del empaquetado Python
+*.egg-info/
