@@ -159,3 +159,41 @@ def test_persona_rechaza_tipo_principal_nulo() -> None:
             primer_apellido="García",
             tipo_persona=None,  # type: ignore[arg-type]
         )
+
+
+def test_persona_inicia_activa() -> None:
+    """Una Persona nueva comienza con estado ACTIVO."""
+
+    persona = Persona(
+        primer_nombre="Laura",
+        primer_apellido="Martínez",
+        tipo_persona=TipoPersona(nombre="ESTUDIANTE"),
+    )
+
+    assert persona.estado == "ACTIVO"
+
+
+def test_persona_admite_estado_inactivo() -> None:
+    """Permite representar una Persona administrativamente inactiva."""
+
+    persona = Persona(
+        primer_nombre="Carlos",
+        primer_apellido="Rojas",
+        tipo_persona=TipoPersona(nombre="DOCENTE"),
+        estado="INACTIVO",
+    )
+
+    assert persona.estado == "INACTIVO"
+
+
+@pytest.mark.parametrize("estado", ["", "SUSPENDIDO"])
+def test_persona_rechaza_estados_desconocidos(estado: str) -> None:
+    """Rechaza valores que no pertenecen al catálogo de estados."""
+
+    with pytest.raises(ValueError, match="estado"):
+        Persona(
+            primer_nombre="Ana",
+            primer_apellido="García",
+            tipo_persona=TipoPersona(nombre="ESTUDIANTE"),
+            estado=estado,
+        )

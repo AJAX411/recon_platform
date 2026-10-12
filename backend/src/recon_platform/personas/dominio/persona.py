@@ -11,6 +11,8 @@ from dataclasses import dataclass
 
 from recon_platform.personas.dominio.tipo_persona import TipoPersona
 
+ESTADOS_PERSONA = frozenset({"ACTIVO", "INACTIVO"})
+
 
 @dataclass(kw_only=True, slots=True)
 class Persona:
@@ -20,6 +22,7 @@ class Persona:
     primer_nombre: str
     primer_apellido: str
     tipo_persona: TipoPersona
+    estado: str = "ACTIVO"
 
     # Datos personales opcionales.
     segundo_nombre: str | None = None
@@ -33,10 +36,14 @@ class Persona:
     numero_documento: str | None = None
 
     def __post_init__(self) -> None:
+        """Valida la clasificación, el estado y los datos de Persona."""
+
         if not isinstance(self.tipo_persona, TipoPersona):
             raise ValueError("La Persona debe tener un TipoPersona válido.")
 
-        """Valida los campos obligatorios y los identificadores opcionales."""
+        # Validar el estado administrativo de la Persona.
+        if not isinstance(self.estado, str) or self.estado not in ESTADOS_PERSONA:
+            raise ValueError("El estado de Persona debe ser ACTIVO o INACTIVO.")
 
         # El primer nombre y el primer apellido son obligatorios.
         campos_obligatorios = (
