@@ -17,23 +17,24 @@ class Configuracion:
 
 
 def obtener_uri_mysql(*, pruebas: bool = False) -> str | None:
-    """Prepara la URL sin abrir conexión; exige una base distinta en pruebas."""
+    """Prepara la URL sin abrir conexión; aísla base y credenciales de pruebas."""
     base_desarrollo = os.getenv("DB_NAME", "").strip()
-    base_pruebas = os.getenv("DB_TEST_NAME", "").strip()
-    nombre = base_pruebas if pruebas else base_desarrollo
-    usuario = os.getenv("DB_USER", "").strip()
-    clave = os.getenv("DB_PASSWORD", "")
-
-    if not pruebas and not any((base_desarrollo, usuario, clave)):
-        return None
-    if pruebas and not any((base_desarrollo, base_pruebas, usuario, clave)):
-        return None
-    if not nombre or not usuario or not clave:
-        raise ValueError("La configuración MySQL está incompleta.")
-    if pruebas and (
-        not base_desarrollo or base_pruebas.casefold() == base_desarrollo.casefold()
-    ):
-        raise ValueError("DB_TEST_NAME debe ser diferente de DB_NAME.")
+    if pruebas:
+        nombre = os.getenv("DB_TEST_NAME", "").strip()
+        usuario = os.getenv("DB_TEST_USER", "").strip()
+        clave = os.getenv("DB_TEST_PASSWORD", "")
+        if not all((base_desarrollo, nombre, usuario, clave)):
+            raise ValueError("La configuración MySQL de pruebas está incompleta.")
+        if nombre.casefold() == base_desarrollo.casefold():
+            raise ValueError("DB_TEST_NAME debe ser diferente de DB_NAME.")
+    else:
+        nombre = base_desarrollo
+        usuario = os.getenv("DB_USER", "").strip()
+        clave = os.getenv("DB_PASSWORD", "")
+        if not any((nombre, usuario, clave)):
+            return None
+        if not all((nombre, usuario, clave)):
+            raise ValueError("La configuración MySQL está incompleta.")
 
     puerto_texto = os.getenv("DB_PORT", "3306")
     try:
