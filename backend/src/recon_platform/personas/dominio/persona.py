@@ -1,9 +1,10 @@
 """Representación inicial de una Persona en el dominio.
 
-Esta versión incorpora nombres, apellidos e identificadores.
+Esta versión incorpora nombres, apellidos e identificadores,
+con validaciones básicas de los datos recibidos.
 
-La clase todavía no define el modelo físico de MySQL ni
-las relaciones definitivas con otras entidades del sistema.
+El esquema físico de MySQL y las relaciones definitivas
+se definirán en etapas posteriores.
 """
 
 from dataclasses import dataclass
@@ -21,7 +22,7 @@ class Persona:
     segundo_nombre: str | None = None
     segundo_apellido: str | None = None
 
-    # Identificación institucional.
+    # Identificador asignado por la institución.
     identificador_institucional: str | None = None
 
     # Documento de identidad.
@@ -29,8 +30,9 @@ class Persona:
     numero_documento: str | None = None
 
     def __post_init__(self) -> None:
-        """Comprueba que los campos obligatorios tengan contenido."""
+        """Valida los campos obligatorios y los identificadores opcionales."""
 
+        # El primer nombre y el primer apellido son obligatorios.
         campos_obligatorios = (
             "primer_nombre",
             "primer_apellido",
@@ -43,3 +45,21 @@ class Persona:
                 raise ValueError(
                     f"El campo '{campo}' es obligatorio y no puede estar vacío."
                 )
+
+        # Los identificadores son opcionales, pero deben ser válidos
+        # cuando se proporciona un valor diferente de None.
+        campos_identificacion = (
+            "identificador_institucional",
+            "tipo_documento",
+            "numero_documento",
+        )
+
+        for campo in campos_identificacion:
+            valor = getattr(self, campo)
+
+            if valor is not None:
+                if not isinstance(valor, str) or not valor.strip():
+                    raise ValueError(
+                        f"El campo '{campo}' debe contener texto no vacío "
+                        "cuando se proporciona."
+                    )

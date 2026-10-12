@@ -95,3 +95,33 @@ def test_persona_conserva_ceros_iniciales_del_documento() -> None:
     )
 
     assert persona.numero_documento == "00123456"
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor"),
+    [
+        ("identificador_institucional", ""),
+        ("identificador_institucional", "   "),
+        ("identificador_institucional", 12345),
+        ("tipo_documento", ""),
+        ("tipo_documento", "   "),
+        ("tipo_documento", 12345),
+        ("numero_documento", ""),
+        ("numero_documento", "   "),
+        ("numero_documento", 12345),
+    ],
+)
+def test_persona_rechaza_identificadores_invalidos(
+    campo: str,
+    valor: object,
+) -> None:
+    """Los identificadores proporcionados deben contener texto válido."""
+
+    datos_identificacion = {campo: valor}
+
+    with pytest.raises(ValueError, match=campo):
+        Persona(
+            primer_nombre="Laura",
+            primer_apellido="Martínez",
+            **datos_identificacion,
+        )
