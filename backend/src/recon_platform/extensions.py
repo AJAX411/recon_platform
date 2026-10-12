@@ -4,7 +4,6 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
 
-# Se crean sin vincularlas todavía a una aplicación concreta.
-# La conexión a MySQL se configurará en una etapa posterior.
+# Se vinculan en la fábrica solo si existe configuración completa.
 db = SQLAlchemy()
 migrate = Migrate()

@@ -1,13 +1,7 @@
-"""Clasificación institucional de las personas.
-
-El catálogo corresponde a la propuesta provisional
-del Contexto Maestro v1.5.
-"""
+"""Clasificación principal de personas del prototipo."""
 
 from dataclasses import dataclass
 
-
-# Clasificaciones iniciales del prototipo.
 TIPOS_PERSONA_INICIALES = frozenset(
     {
         "ESTUDIANTE",
@@ -18,51 +12,30 @@ TIPOS_PERSONA_INICIALES = frozenset(
         "PERSONAL_SEGURIDAD",
     }
 )
-
-# Estados administrativos inicialmente permitidos.
-ESTADOS_TIPO_PERSONA = frozenset(
-    {
-        "ACTIVO",
-        "INACTIVO",
-    }
-)
+ESTADOS_TIPO_PERSONA = frozenset({"ACTIVO", "INACTIVO"})
 
 
 @dataclass(kw_only=True, slots=True)
 class TipoPersona:
-    """Representa una clasificación institucional."""
+    """Catálogo controlado, separado de las cuentas de plataforma."""
 
     nombre: str
     descripcion: str | None = None
     estado: str = "ACTIVO"
+    id_tipo_persona: int | None = None
 
     def __post_init__(self) -> None:
-        """Valida los datos iniciales de TipoPersona."""
-
-        # Validar la clasificación institucional.
-        if (
-            not isinstance(self.nombre, str)
-            or self.nombre not in TIPOS_PERSONA_INICIALES
-        ):
-            raise ValueError(
-                "El tipo de persona no pertenece al catálogo permitido."
-            )
-
-        # Validar la descripción cuando se proporciona.
+        if not isinstance(self.nombre, str) or self.nombre not in TIPOS_PERSONA_INICIALES:
+            raise ValueError("El tipo de persona no pertenece al catálogo permitido.")
         if self.descripcion is not None:
-            if (
-                not isinstance(self.descripcion, str)
-                or not self.descripcion.strip()
-            ):
-                raise ValueError(
-                    "La descripción debe contener texto no vacío."
-                )
-
-        # Validar el estado administrativo.
-        if (
-            not isinstance(self.estado, str)
-            or self.estado not in ESTADOS_TIPO_PERSONA
+            if not isinstance(self.descripcion, str) or not self.descripcion.strip():
+                raise ValueError("La descripción debe contener texto no vacío.")
+            self.descripcion = self.descripcion.strip()
+            if len(self.descripcion) > 200:
+                raise ValueError("La descripción supera 200 caracteres.")
+        if not isinstance(self.estado, str) or self.estado not in ESTADOS_TIPO_PERSONA:
+            raise ValueError("El estado de TipoPersona debe ser ACTIVO o INACTIVO.")
+        if self.id_tipo_persona is not None and (
+            not isinstance(self.id_tipo_persona, int) or self.id_tipo_persona <= 0
         ):
-            raise ValueError(
-                "El estado de TipoPersona debe ser ACTIVO o INACTIVO."
-            )
+            raise ValueError("id_tipo_persona debe ser un entero positivo.")

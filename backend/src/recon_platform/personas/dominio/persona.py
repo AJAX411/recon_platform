@@ -1,78 +1,78 @@
-"""Representación inicial de una Persona en el dominio.
-
-Esta versión incorpora nombres, apellidos e identificadores,
-con validaciones básicas de los datos recibidos.
-
-El esquema físico de MySQL y las relaciones definitivas
-se definirán en etapas posteriores.
-"""
+"""Reglas de identificación administrativa de una Persona."""
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from recon_platform.personas.dominio.tipo_persona import TipoPersona
 
 ESTADOS_PERSONA = frozenset({"ACTIVO", "INACTIVO"})
 
 
+def _texto_obligatorio(valor: object, campo: str, longitud: int) -> str:
+    if not isinstance(valor, str) or not valor.strip():
+        raise ValueError(f"El campo '{campo}' es obligatorio y no puede estar vacío.")
+    normalizado = valor.strip()
+    if len(normalizado) > longitud:
+        raise ValueError(f"El campo '{campo}' supera {longitud} caracteres.")
+    return normalizado
+
+
+def _texto_opcional(valor: object, campo: str, longitud: int) -> str | None:
+    if valor is None:
+        return None
+    return _texto_obligatorio(valor, campo, longitud)
+
+
 @dataclass(kw_only=True, slots=True)
 class Persona:
-    """Representa los datos iniciales de identificación de una persona."""
+    """Representa a un individuo, independientemente de su cuenta web o biometría."""
 
-    # Datos personales obligatorios.
     primer_nombre: str
     primer_apellido: str
     tipo_persona: TipoPersona
+    tipo_documento: str
+    numero_documento: str
     estado: str = "ACTIVO"
-
-    # Datos personales opcionales.
     segundo_nombre: str | None = None
     segundo_apellido: str | None = None
-
-    # Identificador asignado por la institución.
     identificador_institucional: str | None = None
-
-    # Documento de identidad.
-    tipo_documento: str | None = None
-    numero_documento: str | None = None
+    id_persona: int | None = None
+    fecha_creacion: datetime | None = None
+    fecha_actualizacion: datetime | None = None
 
     def __post_init__(self) -> None:
-        """Valida la clasificación, el estado y los datos de Persona."""
-
         if not isinstance(self.tipo_persona, TipoPersona):
             raise ValueError("La Persona debe tener un TipoPersona válido.")
-
-        # Validar el estado administrativo de la Persona.
         if not isinstance(self.estado, str) or self.estado not in ESTADOS_PERSONA:
             raise ValueError("El estado de Persona debe ser ACTIVO o INACTIVO.")
+        if self.id_persona is not None and (
+            not isinstance(self.id_persona, int) or self.id_persona <= 0
+        ):
+            raise ValueError("id_persona debe ser un entero positivo.")
 
-        # El primer nombre y el primer apellido son obligatorios.
-        campos_obligatorios = (
-            "primer_nombre",
-            "primer_apellido",
+        self.primer_nombre = _texto_obligatorio(self.primer_nombre, "primer_nombre", 100)
+        self.primer_apellido = _texto_obligatorio(
+            self.primer_apellido, "primer_apellido", 100
+        )
+        self.segundo_nombre = _texto_opcional(self.segundo_nombre, "segundo_nombre", 100)
+        self.segundo_apellido = _texto_opcional(
+            self.segundo_apellido, "segundo_apellido", 100
+        )
+        self.tipo_documento = _texto_obligatorio(
+            self.tipo_documento, "tipo_documento", 20
+        )
+        self.numero_documento = _texto_obligatorio(
+            self.numero_documento, "numero_documento", 30
         )
 
-        for campo in campos_obligatorios:
-            valor = getattr(self, campo)
-
-            if not isinstance(valor, str) or not valor.strip():
-                raise ValueError(
-                    f"El campo '{campo}' es obligatorio y no puede estar vacío."
-                )
-
-        # Los identificadores son opcionales, pero deben ser válidos
-        # cuando se proporciona un valor diferente de None.
-        campos_identificacion = (
-            "identificador_institucional",
-            "tipo_documento",
-            "numero_documento",
+        identificador = self.identificador_institucional
+        if isinstance(identificador, str) and not identificador.strip():
+            identificador = None
+        self.identificador_institucional = _texto_opcional(
+            identificador, "identificador_institucional", 50
         )
-
-        for campo in campos_identificacion:
-            valor = getattr(self, campo)
-
-            if valor is not None:
-                if not isinstance(valor, str) or not valor.strip():
-                    raise ValueError(
-                        f"El campo '{campo}' debe contener texto no vacío "
-                        "cuando se proporciona."
-                    )
+        if (
+            self.tipo_persona.nombre == "ESTUDIANTE"
+            and self.identificador_institucional is None
+        ):
+            raise ValueError("El identificador_institucional es obligatorio para ESTUDIANTE.")

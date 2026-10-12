@@ -1,0 +1,75 @@
+"""Tablas SQLAlchemy de Persona y TipoPersona; no son entidades de dominio."""
+
+from datetime import UTC, datetime
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy.dialects import mysql
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from recon_platform.extensions import db
+
+ENTERO_ID = Integer().with_variant(mysql.INTEGER(unsigned=True), "mysql")
+
+
+def _ahora_utc_para_mysql() -> datetime:
+    """MySQL DATETIME no conserva zona; persistimos valores convencionales UTC."""
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
+class TipoPersonaModelo(db.Model):
+    __tablename__ = "tipo_persona"
+    __table_args__ = (UniqueConstraint("nombre", name="uq_tipo_persona_nombre"),)
+
+    id_tipo_persona: Mapped[int] = mapped_column(
+        ENTERO_ID, primary_key=True, autoincrement=True
+    )
+    nombre: Mapped[str] = mapped_column(String(50), nullable=False)
+    descripcion: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    estado: Mapped[str] = mapped_column(String(20), nullable=False, default="ACTIVO")
+
+
+class PersonaModelo(db.Model):
+    __tablename__ = "persona"
+    __table_args__ = (
+        UniqueConstraint(
+            "identificador_institucional",
+            name="uq_persona_identificador_institucional",
+        ),
+        UniqueConstraint(
+            "tipo_documento", "numero_documento", name="uq_persona_documento"
+        ),
+    )
+
+    id_persona: Mapped[int] = mapped_column(
+        ENTERO_ID, primary_key=True, autoincrement=True
+    )
+    id_tipo_persona: Mapped[int] = mapped_column(
+        ENTERO_ID,
+        ForeignKey(
+            "tipo_persona.id_tipo_persona",
+            name="fk_persona_tipo_persona",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+    )
+    identificador_institucional: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )
+    tipo_documento: Mapped[str] = mapped_column(String(20), nullable=False)
+    numero_documento: Mapped[str] = mapped_column(String(30), nullable=False)
+    primer_nombre: Mapped[str] = mapped_column(String(100), nullable=False)
+    segundo_nombre: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    primer_apellido: Mapped[str] = mapped_column(String(100), nullable=False)
+    segundo_apellido: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    estado: Mapped[str] = mapped_column(String(20), nullable=False, default="ACTIVO")
+    fecha_creacion: Mapped[datetime] = mapped_column(
+        DateTime(timezone=False), nullable=False, default=_ahora_utc_para_mysql
+    )
+    fecha_actualizacion: Mapped[datetime] = mapped_column(
+        DateTime(timezone=False),
+        nullable=False,
+        default=_ahora_utc_para_mysql,
+        onupdate=_ahora_utc_para_mysql,
+    )
+
+    tipo_persona: Mapped[TipoPersonaModelo] = relationship(lazy="joined")

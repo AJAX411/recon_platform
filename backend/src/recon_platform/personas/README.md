@@ -37,7 +37,7 @@ al módulo Identidad.
 Estas decisiones pueden evolucionar mediante el proceso
 formal de arquitectura del proyecto.
 
-## 5. Organización interna prevista
+## 5. Organización interna
 
 API:
 Recibirá solicitudes HTTP y gestionará la entrada y salida
@@ -52,8 +52,8 @@ Representará las entidades y reglas de negocio.
 Infraestructura:
 Implementará la persistencia y las adaptaciones externas.
 
-Las carpetas correspondientes se crearán cuando exista
-funcionalidad que justifique su implementación.
+Actualmente existen dominio, aplicación e infraestructura; la API se
+incorporará cuando sus contratos, autenticación y permisos sean aprobados.
 
 ## 6. Capacidades funcionales candidatas
 
@@ -69,16 +69,16 @@ historias de usuario y criterios de aceptación vigentes.
 
 ## 7. Decisiones todavía abiertas
 
-Antes de desarrollar la persistencia y las operaciones
-funcionales deben revisarse:
+La persistencia inicial se preparó conforme a la resolución puntual
+Registro de Personas y Persistencia MySQL. Continúan abiertos:
 
-- Atributos y validaciones definitivas de Persona.
-- Identificadores y restricciones de unicidad.
-- Reglas exactas de activación y desactivación.
+- Catálogo definitivo de tipos documentales y reglas avanzadas de formato.
+- Obligatoriedad del identificador institucional para SERVICIOS_GENERALES.
+- Reglas exactas de activación y desactivación más allá del estado inicial.
 - Permisos de cada rol para administrar personas.
 - Contratos HTTP y validaciones de entrada.
 - Relación operativa con el enrolamiento biométrico.
-- Modelo físico definitivo de MySQL.
+- Validación de la migración en MySQL; el modelo físico permanece provisional.
 
 No se implementarán reglas ficticias para cerrar estos puntos.
 
