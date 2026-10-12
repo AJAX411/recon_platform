@@ -9,6 +9,8 @@ se definirán en etapas posteriores.
 
 from dataclasses import dataclass
 
+from recon_platform.personas.dominio.tipo_persona import TipoPersona
+
 
 @dataclass(kw_only=True, slots=True)
 class Persona:
@@ -17,6 +19,7 @@ class Persona:
     # Datos personales obligatorios.
     primer_nombre: str
     primer_apellido: str
+    tipo_persona: TipoPersona
 
     # Datos personales opcionales.
     segundo_nombre: str | None = None
@@ -30,6 +33,9 @@ class Persona:
     numero_documento: str | None = None
 
     def __post_init__(self) -> None:
+        if not isinstance(self.tipo_persona, TipoPersona):
+            raise ValueError("La Persona debe tener un TipoPersona válido.")
+
         """Valida los campos obligatorios y los identificadores opcionales."""
 
         # El primer nombre y el primer apellido son obligatorios.
