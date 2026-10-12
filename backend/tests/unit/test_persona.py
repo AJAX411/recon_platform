@@ -1,0 +1,97 @@
+"""Pruebas unitarias de las reglas iniciales de Persona."""
+
+import pytest
+
+from recon_platform.personas.dominio.persona import Persona
+
+
+def test_persona_admite_un_nombre_y_un_apellido() -> None:
+    """Los segundos nombres y apellidos pueden omitirse."""
+
+    persona = Persona(
+        primer_nombre="Ana",
+        primer_apellido="García",
+    )
+
+    assert persona.primer_nombre == "Ana"
+    assert persona.primer_apellido == "García"
+    assert persona.segundo_nombre is None
+    assert persona.segundo_apellido is None
+
+
+def test_persona_admite_dos_nombres_y_dos_apellidos() -> None:
+    """La Persona puede tener segundos nombres y apellidos."""
+
+    persona = Persona(
+        primer_nombre="Juan",
+        segundo_nombre="Carlos",
+        primer_apellido="Pérez",
+        segundo_apellido="López",
+    )
+
+    assert persona.segundo_nombre == "Carlos"
+    assert persona.segundo_apellido == "López"
+
+
+@pytest.mark.parametrize(
+    ("primer_nombre", "primer_apellido"),
+    [
+        ("", "García"),
+        ("   ", "García"),
+        ("Ana", ""),
+        ("Ana", "   "),
+    ],
+)
+def test_persona_rechaza_campos_obligatorios_vacios(
+    primer_nombre: str,
+    primer_apellido: str,
+) -> None:
+    """No se permiten valores vacíos en los nombres obligatorios."""
+
+    with pytest.raises(ValueError, match="obligatorio"):
+        Persona(
+            primer_nombre=primer_nombre,
+            primer_apellido=primer_apellido,
+        )
+
+
+def test_persona_admite_identificadores_diferentes() -> None:
+    """El identificador institucional no es el documento de identidad."""
+
+    persona = Persona(
+        primer_nombre="Laura",
+        primer_apellido="Martínez",
+        identificador_institucional="UCC-10234",
+        tipo_documento="CC",
+        numero_documento="123456789",
+    )
+
+    assert persona.identificador_institucional == "UCC-10234"
+    assert persona.tipo_documento == "CC"
+    assert persona.numero_documento == "123456789"
+
+
+def test_persona_admite_identificadores_opcionales() -> None:
+    """Los identificadores pueden omitirse según el modelo lógico actual."""
+
+    persona = Persona(
+        primer_nombre="Andrés",
+        primer_apellido="Rojas",
+    )
+
+    assert persona.identificador_institucional is None
+    assert persona.tipo_documento is None
+    assert persona.numero_documento is None
+
+
+def test_persona_conserva_ceros_iniciales_del_documento() -> None:
+    """El documento se representa como texto, no como número entero."""
+
+    persona = Persona(
+        primer_nombre="Camila",
+        primer_apellido="Gómez",
+        tipo_documento="TI",
+        numero_documento="00123456",
+    )
+
+    assert persona.numero_documento == "00123456"
