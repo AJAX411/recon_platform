@@ -22,6 +22,12 @@ test = [
     "pytest==9.1.1",
 ]
 
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+markers = [
+    "mysql_integration: pruebas reales de MySQL con activación explícita",
+]
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
