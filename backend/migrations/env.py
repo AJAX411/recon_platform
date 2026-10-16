@@ -3,6 +3,7 @@
 from alembic import context
 from flask import current_app
 
+from recon_platform.identidad.infraestructura import modelos as modelos_iam  # noqa: F401
 from recon_platform.personas.infraestructura import modelos  # noqa: F401
 
 config = context.config
