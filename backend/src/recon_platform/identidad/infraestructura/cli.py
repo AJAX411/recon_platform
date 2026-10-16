@@ -47,7 +47,9 @@ def registrar_comandos(app: Flask) -> None:
         ):
             click.echo("Bootstrap cancelado.")
             return
-        login = click.prompt("Identificador de login")
+        login = click.prompt(
+            "Identificador de login", hide_input=True, confirmation_prompt=True
+        )
         contrasena = click.prompt(
             "Contraseña inicial", hide_input=True, confirmation_prompt=True
         )
