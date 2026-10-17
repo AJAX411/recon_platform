@@ -194,6 +194,8 @@ class CambiarEstadoUsuario:
             anterior = objetivo.estado
             objetivo.estado = estado
             actualizado = self.repositorio.actualizar(objetivo)
+            if estado == "INACTIVO":
+                self.repositorio.revocar_sesiones(usuario_id)
             self.repositorio.auditar(
                 accion="CAMBIAR_ESTADO", actor_id=actor.id_usuario,
                 usuario_id=objetivo.id_usuario, anterior=anterior, nuevo=estado,
@@ -240,6 +242,7 @@ class RestablecerContrasenaUsuario:
             objetivo = _objetivo_administrable(self.repositorio, usuario_id)
             objetivo.hash_contrasena = generar_hash_contrasena(nueva_contrasena)
             actualizado = self.repositorio.actualizar(objetivo)
+            self.repositorio.revocar_sesiones(usuario_id)
             self.repositorio.auditar(
                 accion="RESTABLECER_CONTRASENA", actor_id=actor.id_usuario,
                 usuario_id=objetivo.id_usuario,

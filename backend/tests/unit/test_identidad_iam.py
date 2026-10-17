@@ -47,6 +47,7 @@ class RepositorioMemoria:
         }
         self.usuarios: dict[int, UsuarioPlataforma] = {}
         self.eventos: list[dict[str, object]] = []
+        self.sesiones_revocadas: list[int] = []
         self.siguiente_id = 1
         self.bloqueos = 0
         self.fallar_auditoria = False
@@ -83,6 +84,9 @@ class RepositorioMemoria:
         self.usuarios[usuario.id_usuario] = usuario
         return usuario
 
+    def revocar_sesiones(self, id_usuario: int) -> None:
+        self.sesiones_revocadas.append(id_usuario)
+
     def auditar(
         self, *, accion: str, actor_id: int | None, usuario_id: int,
         anterior: str | None = None, nuevo: str | None = None,
@@ -105,7 +109,7 @@ class UnidadMemoria:
     def _guardar_estado(self) -> None:
         self.estado = deepcopy((
             self.repositorio.usuarios, self.repositorio.eventos,
-            self.repositorio.siguiente_id,
+            self.repositorio.siguiente_id, self.repositorio.sesiones_revocadas,
         ))
 
     def confirmar(self) -> None:
@@ -114,10 +118,11 @@ class UnidadMemoria:
 
     def revertir(self) -> None:
         self.reversiones += 1
-        usuarios, eventos, siguiente_id = deepcopy(self.estado)
+        usuarios, eventos, siguiente_id, revocadas = deepcopy(self.estado)
         self.repositorio.usuarios = usuarios
         self.repositorio.eventos = eventos
         self.repositorio.siguiente_id = siguiente_id
+        self.repositorio.sesiones_revocadas = revocadas
 
 
 @pytest.fixture
@@ -408,6 +413,7 @@ def test_estado_login_y_clave_cambian_solo_por_superadmin(
     assert [e["accion"] for e in repositorio.eventos][-3:] == [
         "CAMBIAR_LOGIN", "RESTABLECER_CONTRASENA", "CAMBIAR_ESTADO"
     ]
+    assert repositorio.sesiones_revocadas == [cuenta.id_usuario, cuenta.id_usuario]
 
 
 def test_superadmin_inicial_no_puede_desactivarse_ni_cambiar_rol(

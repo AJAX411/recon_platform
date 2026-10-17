@@ -1,0 +1,94 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Recon Facial — autenticación humana",
+    "version": "1.0.0-prototipo",
+    "description": "Contrato provisional del primer incremento HTTP IAM. Las sesiones humanas se guardan en MySQL; la cookie contiene solo un identificador opaco. HTTPS es obligatorio, salvo la excepción explícita para HTTP local."
+  },
+  "servers": [{"url": "/api/v1"}],
+  "components": {
+    "securitySchemes": {
+      "sesionHumana": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "recon_session"
+      }
+    },
+    "schemas": {
+      "Identidad": {
+        "type": "object",
+        "required": ["id_usuario", "login", "rol"],
+        "properties": {
+          "id_usuario": {"type": "integer", "minimum": 1},
+          "login": {"type": "string"},
+          "rol": {"type": "string", "enum": ["SUPERADMIN", "ADMINISTRADOR", "OPERADOR"]}
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {"error": {"type": "string"}}
+      }
+    }
+  },
+  "paths": {
+    "/auth/csrf": {
+      "get": {
+        "summary": "Obtener token CSRF y, si hace falta, una sesión anónima",
+        "description": "No requiere autenticación. Establece la cookie de sesión; llamar antes del login. Respuestas no almacenables en caché.",
+        "responses": {
+          "200": {
+            "description": "Token CSRF asociado a la cookie de sesión",
+            "headers": {
+              "Set-Cookie": {"description": "recon_session; HttpOnly; SameSite=Lax; Path=/api/v1; Secure en HTTPS", "schema": {"type": "string"}}
+            },
+            "content": {"application/json": {"schema": {"type": "object", "required": ["csrf_token"], "properties": {"csrf_token": {"type": "string"}}}}}
+          },
+          "403": {"description": "Transporte HTTP no autorizado"},
+          "503": {"description": "Autenticación no disponible"}
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Iniciar sesión con usuario y contraseña",
+        "security": [{"sesionHumana": []}],
+        "description": "Requiere cookie y X-CSRF-Token obtenidos de /auth/csrf. Al iniciar correctamente, rota la cookie y entrega un nuevo token CSRF en la cabecera de respuesta. Máximo diez intentos por IP en cinco minutos por proceso.",
+        "parameters": [{"name": "X-CSRF-Token", "in": "header", "required": true, "schema": {"type": "string"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["login", "contrasena"], "properties": {"login": {"type": "string"}, "contrasena": {"type": "string", "format": "password"}}}}}},
+        "responses": {
+          "200": {"description": "Sesión activa", "headers": {"X-CSRF-Token": {"schema": {"type": "string"}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Identidad"}}}},
+          "400": {"description": "Cuerpo inválido"},
+          "401": {"description": "Credenciales inválidas o cuenta inactiva"},
+          "403": {"description": "CSRF inválido"},
+          "429": {"description": "Demasiados intentos", "headers": {"Retry-After": {"schema": {"type": "string"}}}},
+          "503": {"description": "Autenticación no disponible"}
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Consultar identidad, estado y rol vigentes de la sesión",
+        "security": [{"sesionHumana": []}],
+        "responses": {
+          "200": {"description": "Cuenta activa", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Identidad"}}}},
+          "401": {"description": "Sin sesión activa o cuenta inactiva"},
+          "503": {"description": "No se pudo comprobar la sesión por indisponibilidad del servicio"}
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Revocar solo la sesión actual",
+        "security": [{"sesionHumana": []}],
+        "parameters": [{"name": "X-CSRF-Token", "in": "header", "required": true, "schema": {"type": "string"}}],
+        "responses": {
+          "200": {"description": "Sesión revocada", "content": {"application/json": {"schema": {"type": "object", "properties": {"estado": {"type": "string", "enum": ["cerrada"]}}}}}},
+          "401": {"description": "Sin sesión activa"},
+          "403": {"description": "CSRF inválido"},
+          "503": {"description": "No se pudo comprobar o cerrar la sesión por indisponibilidad del servicio"}
+        }
+      }
+    }
+  }
+}

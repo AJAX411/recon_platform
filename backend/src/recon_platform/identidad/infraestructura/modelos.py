@@ -91,3 +91,21 @@ class AuditoriaIAMModelo(db.Model):
     fecha: Mapped[datetime] = mapped_column(
         DateTime(timezone=False), nullable=False, default=_ahora_utc
     )
+
+
+class SesionUsuarioModelo(db.Model):
+    """Sesión HTTP; la clave primaria es el digest, nunca el token de la cookie."""
+
+    __tablename__ = "sesion_usuario"
+
+    digest: Mapped[str] = mapped_column(String(64), primary_key=True)
+    id_usuario: Mapped[int | None] = mapped_column(
+        ENTERO_ID,
+        ForeignKey("usuario_plataforma.id_usuario", name="fk_sesion_usuario_cuenta", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    fecha_creacion: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False)
+    fecha_actividad: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False)
+    fecha_expiracion: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False)
+    fecha_revocacion: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), nullable=True)

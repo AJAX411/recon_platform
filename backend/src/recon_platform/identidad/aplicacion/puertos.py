@@ -21,6 +21,8 @@ class RepositorioIAM(Protocol):
 
     def actualizar(self, usuario: UsuarioPlataforma) -> UsuarioPlataforma: ...
 
+    def revocar_sesiones(self, id_usuario: int) -> None: ...
+
     def auditar(
         self,
         *,

@@ -11,7 +11,7 @@ class Configuracion:
     TESTING = False
 
     # La clave debe provenir del entorno, nunca estar escrita en el código.
-    # Será necesaria cuando implementemos las sesiones de autenticación.
+    # El HTTP IAM exige un valor del entorno de al menos 32 bytes UTF-8.
     SECRET_KEY: str | None = os.getenv("SECRET_KEY") or None
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

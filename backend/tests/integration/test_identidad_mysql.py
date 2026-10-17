@@ -1,6 +1,6 @@
-"""Validación IAM en recon_tests después de aplicar manualmente 0002.
+"""Validación IAM en recon_tests desde la revisión 0002.
 
-La barrera de conftest exige activación, destino autorizado y revisión 0002.
+La barrera exige activación, destino autorizado y revisión IAM conocida.
 Cada dato ficticio creado por estas pruebas permanece en una transacción reversible.
 """
 
@@ -65,9 +65,9 @@ def _crear_cuenta(
 def test_esquema_iam_y_revision_sin_fk_a_persona(
     conexion_iam_mysql: Connection,
 ) -> None:
-    assert conexion_iam_mysql.scalar(text("SELECT version_num FROM alembic_version")) == (
-        "0002_identity_iam"
-    )
+    assert conexion_iam_mysql.scalar(text("SELECT version_num FROM alembic_version")) in {
+        "0002_identity_iam", "0003_sesiones_iam"
+    }
     inspector = inspect(conexion_iam_mysql)
     assert {"rol", "usuario_plataforma", "auditoria_iam", "persona"}.issubset(
         inspector.get_table_names()

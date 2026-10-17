@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -16,6 +16,7 @@ from recon_platform.identidad.dominio.usuario_plataforma import UsuarioPlataform
 from recon_platform.identidad.infraestructura.modelos import (
     AuditoriaIAMModelo,
     RolModelo,
+    SesionUsuarioModelo,
     UsuarioPlataformaModelo,
 )
 
@@ -102,6 +103,16 @@ class RepositorioIAMSQLAlchemy:
             raise _traducir_integridad(error) from error
         self.sesion.expire(modelo, ["rol"])
         return self._a_dominio(modelo)
+
+    def revocar_sesiones(self, id_usuario: int) -> None:
+        self.sesion.execute(
+            update(SesionUsuarioModelo)
+            .where(
+                SesionUsuarioModelo.id_usuario == id_usuario,
+                SesionUsuarioModelo.fecha_revocacion.is_(None),
+            )
+            .values(fecha_revocacion=datetime.now(UTC).replace(tzinfo=None))
+        )
 
     def auditar(
         self,
