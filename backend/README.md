@@ -170,7 +170,8 @@ una reactivación posterior no restaura sesiones antiguas. La sesión vence tras
 ocho horas desde su creación. Login admite diez intentos por IP en cinco minutos
 **por proceso**; esta defensa inicial no es un límite compartido entre procesos.
 
-La suite unitaria completa aprobó 124 pruebas en el entorno virtual del backend.
+La suite unitaria completa aprobó 135 pruebas en el entorno virtual del backend
+tras incorporar la administración HTTP.
 Las pruebas unitarias HTTP usan SQLite efímero. Las pruebas MySQL de sesiones
 permanecen separadas y omitidas por defecto. Exigen `0003_sesiones_iam` en
 `recon_tests`, además de las barreras existentes de destino y aislamiento. No
@@ -183,6 +184,24 @@ permanecieron conservadas y no quedaron sesiones nuevas activas. Esta prueba
 manual ejerció MySQL real, pero no sustituye las pruebas unitarias ni las de
 integración. La política de limpieza de sesiones expiradas sigue pendiente.
 Ninguna tabla se crea al arrancar Flask.
+
+## Administración HTTP de cuentas — incremento del prototipo
+
+El contrato de [`openapi.json`](./openapi.json) incluye `GET /api/v1/iam/roles`,
+`GET /api/v1/iam/usuarios`, `GET /api/v1/iam/usuarios/{usuario_id}`,
+`POST /api/v1/iam/usuarios` y `PATCH` sobre las subrutas `/rol` y `/estado`.
+Todas exigen una sesión SUPERADMIN activa. Las escrituras exigen además el
+`X-CSRF-Token` asociado a la cookie actual. El listado usa `limite` (1 a 100,
+predeterminado 50) y `desplazamiento` (0 a 1 000 000); las respuestas de cuentas
+solo contienen identificador, login, rol y estado. No incluyen hash, contraseña,
+sesiones ni auditoría.
+
+La creación permite únicamente ADMINISTRADOR y OPERADOR. Los cambios de rol y
+estado respetan la protección del SUPERADMIN inicial y reutilizan los casos de
+uso que auditan las operaciones. Desactivar una cuenta revoca sus sesiones. El
+cambio de login y el restablecimiento de contraseña no tienen rutas HTTP en
+este incremento. La validación de estas rutas con MySQL real queda pendiente;
+las pruebas HTTP de este incremento usan SQLite efímero.
 
 ## Procedimiento histórico de solo lectura previo a `0002_identity_iam`
 

@@ -24,6 +24,26 @@
           "rol": {"type": "string", "enum": ["SUPERADMIN", "ADMINISTRADOR", "OPERADOR"]}
         }
       },
+      "CuentaPlataforma": {
+        "type": "object",
+        "required": ["id_usuario", "login", "rol", "estado"],
+        "additionalProperties": false,
+        "properties": {
+          "id_usuario": {"type": "integer", "minimum": 1},
+          "login": {"type": "string"},
+          "rol": {"type": "string", "enum": ["SUPERADMIN", "ADMINISTRADOR", "OPERADOR"]},
+          "estado": {"type": "string", "enum": ["ACTIVO", "INACTIVO"]}
+        }
+      },
+      "RolDisponible": {
+        "type": "object",
+        "required": ["nombre", "asignable"],
+        "additionalProperties": false,
+        "properties": {
+          "nombre": {"type": "string", "enum": ["SUPERADMIN", "ADMINISTRADOR", "OPERADOR"]},
+          "asignable": {"type": "boolean", "description": "SUPERADMIN se reserva al bootstrap inicial."}
+        }
+      },
       "Error": {
         "type": "object",
         "required": ["error"],
@@ -87,6 +107,105 @@
           "401": {"description": "Sin sesión activa"},
           "403": {"description": "CSRF inválido"},
           "503": {"description": "No se pudo comprobar o cerrar la sesión por indisponibilidad del servicio"}
+        }
+      }
+    },
+    "/iam/roles": {
+      "get": {
+        "summary": "Consultar el catálogo de roles",
+        "description": "Solo SUPERADMIN. El rol SUPERADMIN es visible, pero no asignable mediante esta API.",
+        "security": [{"sesionHumana": []}],
+        "responses": {
+          "200": {"description": "Roles disponibles", "content": {"application/json": {"schema": {"type": "object", "required": ["roles"], "properties": {"roles": {"type": "array", "items": {"$ref": "#/components/schemas/RolDisponible"}}}}}}},
+          "401": {"description": "Sin sesión activa o cuenta inactiva"},
+          "403": {"description": "Rol insuficiente o transporte no autorizado"},
+          "503": {"description": "No se pudo comprobar la sesión o consultar IAM"}
+        }
+      }
+    },
+    "/iam/usuarios": {
+      "get": {
+        "summary": "Listar cuentas de plataforma con paginación acotada",
+        "security": [{"sesionHumana": []}],
+        "parameters": [
+          {"name": "limite", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50}},
+          {"name": "desplazamiento", "in": "query", "schema": {"type": "integer", "minimum": 0, "maximum": 1000000, "default": 0}}
+        ],
+        "responses": {
+          "200": {"description": "Cuentas sin hashes ni auditorías", "content": {"application/json": {"schema": {"type": "object", "required": ["usuarios", "limite", "desplazamiento"], "properties": {"usuarios": {"type": "array", "items": {"$ref": "#/components/schemas/CuentaPlataforma"}}, "limite": {"type": "integer"}, "desplazamiento": {"type": "integer"}}}}}},
+          "400": {"description": "Paginación inválida"},
+          "401": {"description": "Sin sesión activa o cuenta inactiva"},
+          "403": {"description": "Rol insuficiente o transporte no autorizado"},
+          "503": {"description": "No se pudo comprobar la sesión o consultar IAM"}
+        }
+      },
+      "post": {
+        "summary": "Crear cuenta ADMINISTRADOR u OPERADOR",
+        "description": "Solo SUPERADMIN. No permite crear cuentas SUPERADMIN ni registro público. La contraseña se envía por HTTPS y solo se almacena como hash.",
+        "security": [{"sesionHumana": []}],
+        "parameters": [{"name": "X-CSRF-Token", "in": "header", "required": true, "schema": {"type": "string"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["login", "contrasena", "rol"], "additionalProperties": false, "properties": {"login": {"type": "string"}, "contrasena": {"type": "string", "format": "password", "minLength": 12, "maxLength": 1024}, "rol": {"type": "string", "enum": ["ADMINISTRADOR", "OPERADOR"]}}}}}},
+        "responses": {
+          "201": {"description": "Cuenta creada y auditada", "headers": {"Location": {"schema": {"type": "string"}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CuentaPlataforma"}}}},
+          "400": {"description": "Cuerpo o campos inválidos"},
+          "401": {"description": "Sin sesión activa o cuenta inactiva"},
+          "403": {"description": "CSRF inválido, rol insuficiente o transporte no autorizado"},
+          "409": {"description": "Login duplicado"},
+          "503": {"description": "No se pudo comprobar la sesión o administrar IAM"}
+        }
+      }
+    },
+    "/iam/usuarios/{usuario_id}": {
+      "get": {
+        "summary": "Consultar una cuenta de plataforma",
+        "security": [{"sesionHumana": []}],
+        "parameters": [{"name": "usuario_id", "in": "path", "required": true, "schema": {"type": "integer", "minimum": 1}}],
+        "responses": {
+          "200": {"description": "Cuenta sin hash ni auditorías", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CuentaPlataforma"}}}},
+          "401": {"description": "Sin sesión activa o cuenta inactiva"},
+          "403": {"description": "Rol insuficiente o transporte no autorizado"},
+          "404": {"description": "Cuenta inexistente"},
+          "503": {"description": "No se pudo comprobar la sesión o consultar IAM"}
+        }
+      }
+    },
+    "/iam/usuarios/{usuario_id}/rol": {
+      "patch": {
+        "summary": "Cambiar el rol de una cuenta administrable",
+        "description": "La identidad histórica de la cuenta se conserva. No permite modificar el SUPERADMIN inicial ni asignar SUPERADMIN.",
+        "security": [{"sesionHumana": []}],
+        "parameters": [
+          {"name": "usuario_id", "in": "path", "required": true, "schema": {"type": "integer", "minimum": 1}},
+          {"name": "X-CSRF-Token", "in": "header", "required": true, "schema": {"type": "string"}}
+        ],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["rol"], "additionalProperties": false, "properties": {"rol": {"type": "string", "enum": ["ADMINISTRADOR", "OPERADOR"]}}}}}},
+        "responses": {
+          "200": {"description": "Rol actualizado o ya vigente", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CuentaPlataforma"}}}},
+          "400": {"description": "Rol inválido"},
+          "401": {"description": "Sin sesión activa o cuenta inactiva"},
+          "403": {"description": "CSRF inválido, rol insuficiente o cuenta SUPERADMIN protegida"},
+          "404": {"description": "Cuenta inexistente"},
+          "503": {"description": "No se pudo comprobar la sesión o administrar IAM"}
+        }
+      }
+    },
+    "/iam/usuarios/{usuario_id}/estado": {
+      "patch": {
+        "summary": "Activar o desactivar una cuenta administrable",
+        "description": "La desactivación revoca sus sesiones. No permite desactivar el SUPERADMIN inicial.",
+        "security": [{"sesionHumana": []}],
+        "parameters": [
+          {"name": "usuario_id", "in": "path", "required": true, "schema": {"type": "integer", "minimum": 1}},
+          {"name": "X-CSRF-Token", "in": "header", "required": true, "schema": {"type": "string"}}
+        ],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["estado"], "additionalProperties": false, "properties": {"estado": {"type": "string", "enum": ["ACTIVO", "INACTIVO"]}}}}}},
+        "responses": {
+          "200": {"description": "Estado actualizado o ya vigente", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CuentaPlataforma"}}}},
+          "400": {"description": "Estado inválido"},
+          "401": {"description": "Sin sesión activa o cuenta inactiva"},
+          "403": {"description": "CSRF inválido, rol insuficiente o cuenta SUPERADMIN protegida"},
+          "404": {"description": "Cuenta inexistente"},
+          "503": {"description": "No se pudo comprobar la sesión o administrar IAM"}
         }
       }
     }

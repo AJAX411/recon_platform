@@ -44,6 +44,10 @@ def create_app(*, pruebas: bool = False) -> Flask:
     app.extensions["recon_limitador_login"] = LimitadorIntentos()
     app.register_blueprint(bp_autenticacion)
 
+    from recon_platform.identidad.administracion_api import bp as bp_administracion_iam
+
+    app.register_blueprint(bp_administracion_iam)
+
     from recon_platform.identidad.infraestructura.cli import registrar_comandos
 
     registrar_comandos(app)

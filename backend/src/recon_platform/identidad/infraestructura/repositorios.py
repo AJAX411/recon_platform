@@ -44,6 +44,10 @@ class RepositorioIAMSQLAlchemy:
         modelo = self.sesion.scalar(consulta)
         return None if modelo is None else Rol(nombre=modelo.nombre, id_rol=modelo.id_rol)
 
+    def listar_roles(self) -> list[Rol]:
+        modelos = self.sesion.scalars(select(RolModelo).order_by(RolModelo.id_rol)).all()
+        return [Rol(nombre=modelo.nombre, id_rol=modelo.id_rol) for modelo in modelos]
+
     def obtener_superadmin(self) -> UsuarioPlataforma | None:
         modelos = self.sesion.scalars(
             select(UsuarioPlataformaModelo)
@@ -64,6 +68,15 @@ class RepositorioIAMSQLAlchemy:
     def obtener_por_id(self, id_usuario: int) -> UsuarioPlataforma | None:
         modelo = self.sesion.get(UsuarioPlataformaModelo, id_usuario)
         return None if modelo is None else self._a_dominio(modelo)
+
+    def listar_usuarios(self, *, limite: int, desplazamiento: int) -> list[UsuarioPlataforma]:
+        modelos = self.sesion.scalars(
+            select(UsuarioPlataformaModelo)
+            .order_by(UsuarioPlataformaModelo.id_usuario)
+            .limit(limite)
+            .offset(desplazamiento)
+        ).all()
+        return [self._a_dominio(modelo) for modelo in modelos]
 
     def obtener_por_login(self, login: str) -> UsuarioPlataforma | None:
         modelo = self.sesion.scalar(

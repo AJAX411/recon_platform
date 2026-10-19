@@ -15,7 +15,11 @@ from sqlalchemy.orm import Session
 from recon_platform.identidad.aplicacion.casos_de_uso import (
     BootstrapSuperadmin,
     CambiarRolUsuario,
+    ConsultarUsuarioPlataforma,
     CrearUsuarioPlataforma,
+    ListarRoles,
+    ListarUsuariosPlataforma,
+    PermisoDenegado,
 )
 from recon_platform.identidad.dominio.credenciales import (
     generar_hash_contrasena,
@@ -319,3 +323,29 @@ def test_transaccion_externa_aisla_incluso_commits_de_casos_de_uso(
     assert conexion_iam_mysql.scalar(
         select(func.count()).select_from(AuditoriaIAMModelo)
     ) == auditorias_antes
+
+
+def test_consultas_administrativas_iam_acotadas_y_autorizadas(
+    sesion_iam_mysql: Session,
+) -> None:
+    actor = _administrador_ficticio(sesion_iam_mysql)
+    primero = _crear_cuenta(
+        sesion_iam_mysql, actor_id=actor.id_usuario, login=_login()
+    )
+    segundo = _crear_cuenta(
+        sesion_iam_mysql, actor_id=actor.id_usuario, login=_login()
+    )
+    repo = RepositorioIAMSQLAlchemy(sesion_iam_mysql)
+    unidad = UnidadTrabajoIAMSQLAlchemy(sesion_iam_mysql)
+    assert {rol.nombre for rol in ListarRoles(repo, unidad).ejecutar(
+        actor_id=actor.id_usuario
+    )} == ROLES
+    pagina = ListarUsuariosPlataforma(repo, unidad).ejecutar(
+        actor_id=actor.id_usuario, limite=1, desplazamiento=1
+    )
+    assert len(pagina) == 1 and pagina[0].id_usuario == primero.id_usuario
+    assert ConsultarUsuarioPlataforma(repo, unidad).ejecutar(
+        actor_id=actor.id_usuario, usuario_id=segundo.id_usuario
+    ).login == segundo.login
+    with pytest.raises(PermisoDenegado):
+        ListarUsuariosPlataforma(repo, unidad).ejecutar(actor_id=primero.id_usuario)

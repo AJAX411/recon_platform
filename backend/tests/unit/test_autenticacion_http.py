@@ -16,7 +16,11 @@ from recon_platform.identidad.aplicacion.casos_de_uso import (
     BootstrapSuperadmin,
     CambiarEstadoUsuario,
     CambiarRolUsuario,
+    ConsultarUsuarioPlataforma,
     CrearUsuarioPlataforma,
+    ListarRoles,
+    ListarUsuariosPlataforma,
+    PermisoDenegado,
     RestablecerContrasenaUsuario,
 )
 from recon_platform.identidad.infraestructura.modelos import (
@@ -350,3 +354,258 @@ def test_fallo_al_confirmar_sesion_revierte_sin_persistir(entorno, monkeypatch) 
     monkeypatch.setenv("DB_HOST", "otro-servidor")
     with pytest.raises(ValueError, match="desarrollo local"):
         create_app()
+
+
+def test_admin_consulta_roles_y_cuentas_sin_campos_sensibles(entorno) -> None:
+    _, cliente, _, admin_id, operador_id = entorno
+    assert _login(cliente, "admin.ficticio")[0] == 200
+    roles = cliente.get("/api/v1/iam/roles")
+    assert roles.status_code == 200
+    assert {rol["nombre"] for rol in roles.json["roles"]} == {
+        "SUPERADMIN", "ADMINISTRADOR", "OPERADOR"
+    }
+    assert next(rol for rol in roles.json["roles"] if rol["nombre"] == "SUPERADMIN")["asignable"] is False
+    listado = cliente.get("/api/v1/iam/usuarios?limite=1&desplazamiento=1")
+    assert listado.status_code == 200
+    assert listado.json == {
+        "usuarios": [{
+            "id_usuario": operador_id, "login": "operador.ficticio",
+            "rol": "OPERADOR", "estado": "ACTIVO",
+        }], "limite": 1, "desplazamiento": 1,
+    }
+    detalle = cliente.get(f"/api/v1/iam/usuarios/{admin_id}")
+    assert detalle.status_code == 200
+    assert detalle.json == {
+        "id_usuario": admin_id, "login": "admin.ficticio",
+        "rol": "SUPERADMIN", "estado": "ACTIVO",
+    }
+    assert all(respuesta.headers["Cache-Control"] == "no-store" for respuesta in (roles, listado, detalle))
+
+
+def test_casos_de_consulta_tambien_exigen_superadmin(entorno) -> None:
+    aplicacion, _, _, admin_id, operador_id = entorno
+    with aplicacion.app_context():
+        repo = RepositorioIAMSQLAlchemy(db.session)
+        unidad = UnidadTrabajoIAMSQLAlchemy(db.session)
+        with pytest.raises(PermisoDenegado):
+            ListarRoles(repo, unidad).ejecutar(actor_id=operador_id)
+        with pytest.raises(PermisoDenegado):
+            ListarUsuariosPlataforma(repo, unidad).ejecutar(actor_id=operador_id)
+        with pytest.raises(PermisoDenegado):
+            ConsultarUsuarioPlataforma(repo, unidad).ejecutar(
+                actor_id=operador_id, usuario_id=admin_id
+            )
+        assert len(ListarRoles(repo, unidad).ejecutar(actor_id=admin_id)) == 3
+        assert ConsultarUsuarioPlataforma(repo, unidad).ejecutar(
+            actor_id=admin_id, usuario_id=operador_id
+        ).login == "operador.ficticio"
+
+
+def test_admin_crea_cambia_rol_y_estado_con_auditoria_y_revocacion(entorno) -> None:
+    aplicacion, cliente, _, admin_id, _ = entorno
+    estado, csrf = _login(cliente, "admin.ficticio")
+    assert estado == 200 and csrf is not None
+    cabeceras = {"X-CSRF-Token": csrf}
+    creada = cliente.post(
+        "/api/v1/iam/usuarios",
+        json={"login": " Nueva.Cuenta ", "contrasena": CLAVE, "rol": "OPERADOR"},
+        headers=cabeceras,
+    )
+    assert creada.status_code == 201
+    id_cuenta = creada.json["id_usuario"]
+    assert creada.json == {
+        "id_usuario": id_cuenta, "login": "nueva.cuenta",
+        "rol": "OPERADOR", "estado": "ACTIVO",
+    }
+    assert creada.headers["Location"] == f"/api/v1/iam/usuarios/{id_cuenta}"
+    assert CLAVE not in creada.get_data(as_text=True)
+    cliente_cuenta = aplicacion.test_client()
+    assert _login(cliente_cuenta, "nueva.cuenta")[0] == 200
+    cambio = cliente.patch(
+        f"/api/v1/iam/usuarios/{id_cuenta}/rol",
+        json={"rol": "ADMINISTRADOR"}, headers=cabeceras,
+    )
+    assert cambio.status_code == 200
+    assert cambio.json["id_usuario"] == id_cuenta
+    assert cambio.json["rol"] == "ADMINISTRADOR"
+    desactivada = cliente.patch(
+        f"/api/v1/iam/usuarios/{id_cuenta}/estado",
+        json={"estado": "INACTIVO"}, headers=cabeceras,
+    )
+    assert desactivada.status_code == 200
+    assert desactivada.json["estado"] == "INACTIVO"
+    assert cliente_cuenta.get("/api/v1/auth/me").status_code == 401
+    with aplicacion.app_context():
+        eventos = db.session.scalars(
+            select(AuditoriaIAMModelo).where(AuditoriaIAMModelo.usuario_id == id_cuenta)
+            .order_by(AuditoriaIAMModelo.id_auditoria)
+        ).all()
+        assert [(e.accion, e.actor_id) for e in eventos] == [
+            ("CREAR_CUENTA", admin_id), ("CAMBIAR_ROL", admin_id),
+            ("CAMBIAR_ESTADO", admin_id),
+        ]
+        assert all(e.resultado == "EXITO" and CLAVE not in repr(e.__dict__) for e in eventos)
+    reactivada = cliente.patch(
+        f"/api/v1/iam/usuarios/{id_cuenta}/estado",
+        json={"estado": "ACTIVO"}, headers=cabeceras,
+    )
+    assert reactivada.status_code == 200
+    assert cliente_cuenta.get("/api/v1/auth/me").status_code == 401
+
+
+def test_admin_rechaza_login_duplicado_y_superadmin_adicional(entorno) -> None:
+    aplicacion, cliente, _, admin_id, _ = entorno
+    _, csrf = _login(cliente, "admin.ficticio")
+    cabeceras = {"X-CSRF-Token": csrf}
+    duplicada = cliente.post(
+        "/api/v1/iam/usuarios",
+        json={"login": " OPERADOR.FICTICIO ", "contrasena": CLAVE, "rol": "OPERADOR"},
+        headers=cabeceras,
+    )
+    assert duplicada.status_code == 409
+    adicional = cliente.post(
+        "/api/v1/iam/usuarios",
+        json={"login": "otro.superadmin", "contrasena": CLAVE, "rol": "SUPERADMIN"},
+        headers=cabeceras,
+    )
+    assert adicional.status_code == 400
+    with aplicacion.app_context():
+        assert db.session.scalar(select(UsuarioPlataformaModelo.id_usuario).where(
+            UsuarioPlataformaModelo.login == "otro.superadmin"
+        )) is None
+        assert db.session.scalar(select(UsuarioPlataformaModelo.estado).where(
+            UsuarioPlataformaModelo.id_usuario == admin_id
+        )) == "ACTIVO"
+
+
+@pytest.mark.parametrize("rol_actor", ["OPERADOR", "ADMINISTRADOR"])
+def test_solo_superadmin_accede_a_rutas_administrativas(entorno, rol_actor: str) -> None:
+    aplicacion, cliente, _, admin_id, operador_id = entorno
+    rutas_get = ["/api/v1/iam/roles", "/api/v1/iam/usuarios", f"/api/v1/iam/usuarios/{admin_id}"]
+    assert all(cliente.get(ruta).status_code == 401 for ruta in rutas_get)
+    otro = aplicacion.test_client()
+    if rol_actor == "ADMINISTRADOR":
+        with aplicacion.app_context():
+            CambiarRolUsuario(
+                RepositorioIAMSQLAlchemy(db.session), UnidadTrabajoIAMSQLAlchemy(db.session)
+            ).ejecutar(actor_id=admin_id, usuario_id=operador_id, rol_nombre=rol_actor)
+    estado, csrf = _login(otro, "operador.ficticio")
+    assert estado == 200 and csrf is not None
+    assert all(otro.get(ruta).status_code == 403 for ruta in rutas_get)
+    assert otro.post(
+        "/api/v1/iam/usuarios",
+        json={"login": "indebida.cuenta", "contrasena": CLAVE, "rol": "OPERADOR"},
+        headers={"X-CSRF-Token": csrf},
+    ).status_code == 403
+    assert otro.patch(
+        f"/api/v1/iam/usuarios/{operador_id}/rol",
+        json={"rol": "OPERADOR"}, headers={"X-CSRF-Token": csrf},
+    ).status_code == 403
+    assert otro.patch(
+        f"/api/v1/iam/usuarios/{operador_id}/estado",
+        json={"estado": "INACTIVO"}, headers={"X-CSRF-Token": csrf},
+    ).status_code == 403
+
+
+def test_admin_exige_csrf_y_rechaza_cuerpos_incompletos_o_adicionales(entorno) -> None:
+    aplicacion, cliente, _, _, operador_id = entorno
+    _, csrf = _login(cliente, "admin.ficticio")
+    ruta = "/api/v1/iam/usuarios"
+    cuerpo = {"login": "cuenta.valida", "contrasena": CLAVE, "rol": "OPERADOR"}
+    assert cliente.post(ruta, json=cuerpo).status_code == 403
+    assert cliente.post(ruta, json=cuerpo, headers={"X-CSRF-Token": "0" * 64}).status_code == 403
+    cabeceras = {"X-CSRF-Token": csrf}
+    for invalido in ({"login": "falta.clave", "rol": "OPERADOR"},
+                     {**cuerpo, "id_usuario": 999}, {**cuerpo, "rol": ["OPERADOR"]},
+                     {**cuerpo, "contrasena": "corta"}):
+        assert cliente.post(ruta, json=invalido, headers=cabeceras).status_code == 400
+    assert cliente.patch(
+        f"{ruta}/{operador_id}/rol", json={"rol": ["ADMINISTRADOR"]},
+        headers=cabeceras,
+    ).status_code == 400
+    assert cliente.patch(
+        f"{ruta}/{operador_id}/estado", json={"estado": ["INACTIVO"]},
+        headers=cabeceras,
+    ).status_code == 400
+    with aplicacion.app_context():
+        assert db.session.scalar(select(UsuarioPlataformaModelo.id_usuario).where(
+            UsuarioPlataformaModelo.login == "cuenta.valida"
+        )) is None
+
+
+def test_admin_paginacion_detalle_y_cuenta_inicial_protegida(entorno) -> None:
+    _, cliente, _, admin_id, operador_id = entorno
+    _, csrf = _login(cliente, "admin.ficticio")
+    for consulta in ("limite=0", "limite=101", "desplazamiento=-1", "limite=1&limite=2", "otro=1"):
+        assert cliente.get(f"/api/v1/iam/usuarios?{consulta}").status_code == 400
+    assert cliente.get("/api/v1/iam/usuarios/99999").status_code == 404
+    cabeceras = {"X-CSRF-Token": csrf}
+    for sufijo, cuerpo in (("rol", {"rol": "OPERADOR"}),
+                           ("estado", {"estado": "INACTIVO"})):
+        assert cliente.patch(
+            f"/api/v1/iam/usuarios/{admin_id}/{sufijo}", json=cuerpo,
+            headers=cabeceras,
+        ).status_code == 403
+        assert cliente.patch(
+            f"/api/v1/iam/usuarios/99999/{sufijo}", json=cuerpo,
+            headers=cabeceras,
+        ).status_code == 404
+    assert cliente.get(f"/api/v1/iam/usuarios/{operador_id}").status_code == 200
+    assert cliente.get("/api/v1/auth/me").status_code == 200
+
+
+def test_admin_falla_cerrado_ante_error_de_persistencia(entorno, monkeypatch) -> None:
+    _, cliente, _, _, _ = entorno
+    _, csrf = _login(cliente, "admin.ficticio")
+
+    def fallar(*_args, **_kwargs):
+        raise RuntimeError("detalle-privado-de-persistencia")
+
+    monkeypatch.setattr(RepositorioIAMSQLAlchemy, "listar_usuarios", fallar)
+    respuesta = cliente.get("/api/v1/iam/usuarios")
+    assert respuesta.status_code == 503
+    assert "detalle-privado-de-persistencia" not in respuesta.get_data(as_text=True)
+    def fallar_valor(*_args, **_kwargs):
+        raise ValueError("detalle-privado-de-ORM")
+
+    monkeypatch.setattr(RepositorioIAMSQLAlchemy, "listar_usuarios", fallar_valor)
+    assert cliente.get("/api/v1/iam/usuarios").status_code == 503
+    monkeypatch.setattr(RepositorioIAMSQLAlchemy, "agregar", fallar)
+    respuesta = cliente.post(
+        "/api/v1/iam/usuarios",
+        json={"login": "cuenta.error", "contrasena": CLAVE, "rol": "OPERADOR"},
+        headers={"X-CSRF-Token": csrf},
+    )
+    assert respuesta.status_code == 503
+    assert "detalle-privado-de-persistencia" not in respuesta.get_data(as_text=True)
+    assert CLAVE not in respuesta.get_data(as_text=True)
+
+
+def test_admin_fallo_de_auditoria_revierte_creacion_http(entorno, monkeypatch) -> None:
+    aplicacion, cliente, _, _, _ = entorno
+    _, csrf = _login(cliente, "admin.ficticio")
+
+    def fallar(*_args, **_kwargs):
+        raise RuntimeError("detalle-privado-de-auditoria")
+
+    monkeypatch.setattr(RepositorioIAMSQLAlchemy, "auditar", fallar)
+    respuesta = cliente.post(
+        "/api/v1/iam/usuarios",
+        json={"login": "cuenta.sin.auditoria", "contrasena": CLAVE, "rol": "OPERADOR"},
+        headers={"X-CSRF-Token": csrf},
+    )
+    assert respuesta.status_code == 503
+    assert "detalle-privado-de-auditoria" not in respuesta.get_data(as_text=True)
+    with aplicacion.app_context():
+        assert db.session.scalar(select(UsuarioPlataformaModelo.id_usuario).where(
+            UsuarioPlataformaModelo.login == "cuenta.sin.auditoria"
+        )) is None
+
+
+def test_admin_respeta_configuracion_https_y_host_local(entorno) -> None:
+    aplicacion, cliente, _, _, _ = entorno
+    assert cliente.get(
+        "/api/v1/iam/roles", environ_overrides={"REMOTE_ADDR": "192.0.2.9"}
+    ).status_code == 403
+    aplicacion.config["RECON_COOKIE_SECURE"] = True
+    assert cliente.get("/api/v1/iam/roles").status_code == 403

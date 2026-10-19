@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Iterator
 
 from recon_platform.identidad.aplicacion.puertos import RepositorioIAM, UnidadTrabajoIAM
+from recon_platform.identidad.dominio.rol import Rol
 from recon_platform.identidad.dominio.credenciales import (
     generar_hash_contrasena,
     verificar_contrasena,
@@ -21,6 +22,10 @@ class PermisoDenegado(ValueError):
 
 class UsuarioDuplicado(ValueError):
     """El identificador de login ya está ocupado."""
+
+
+class DatosInvalidosIAM(ValueError):
+    """Los datos recibidos para una operación IAM no superan la validación."""
 
 
 class UsuarioNoExiste(ValueError):
@@ -133,12 +138,19 @@ class CrearUsuarioPlataforma:
             rol = self.repositorio.obtener_rol(rol_nombre)
             if rol is None:
                 raise RolNoExiste("El rol no existe en el catálogo.")
-            login_normalizado = normalizar_login(login)
+            try:
+                login_normalizado = normalizar_login(login)
+            except ValueError as error:
+                raise DatosInvalidosIAM("Los datos de la cuenta no son válidos.") from error
             if self.repositorio.obtener_por_login(login_normalizado) is not None:
                 raise UsuarioDuplicado("El identificador de login ya existe.")
+            try:
+                hash_contrasena = generar_hash_contrasena(contrasena)
+            except ValueError as error:
+                raise DatosInvalidosIAM("Los datos de la cuenta no son válidos.") from error
             usuario = self.repositorio.agregar(UsuarioPlataforma(
                 login=login_normalizado,
-                hash_contrasena=generar_hash_contrasena(contrasena),
+                hash_contrasena=hash_contrasena,
                 rol=rol,
             ))
             self.repositorio.auditar(
@@ -146,6 +158,53 @@ class CrearUsuarioPlataforma:
                 usuario_id=usuario.id_usuario, nuevo=rol.nombre,
             )
             return usuario
+
+
+class ListarUsuariosPlataforma:
+    """Consulta acotada, autorizada con el estado y rol actuales del actor."""
+
+    def __init__(self, repositorio: RepositorioIAM, unidad: UnidadTrabajoIAM) -> None:
+        self.repositorio = repositorio
+        self.unidad = unidad
+
+    def ejecutar(
+        self, *, actor_id: int, limite: int = 50, desplazamiento: int = 0
+    ) -> list[UsuarioPlataforma]:
+        with _transaccion(self.unidad):
+            _exigir_superadmin(self.repositorio, actor_id)
+            if (type(limite) is not int or not 1 <= limite <= 100
+                or type(desplazamiento) is not int or desplazamiento < 0):
+                raise ValueError("La paginación no es válida.")
+            return self.repositorio.listar_usuarios(
+                limite=limite, desplazamiento=desplazamiento
+            )
+
+
+class ConsultarUsuarioPlataforma:
+    def __init__(self, repositorio: RepositorioIAM, unidad: UnidadTrabajoIAM) -> None:
+        self.repositorio = repositorio
+        self.unidad = unidad
+
+    def ejecutar(self, *, actor_id: int, usuario_id: int) -> UsuarioPlataforma:
+        with _transaccion(self.unidad):
+            _exigir_superadmin(self.repositorio, actor_id)
+            if type(usuario_id) is not int or usuario_id <= 0:
+                raise UsuarioNoExiste("La cuenta no existe.")
+            usuario = self.repositorio.obtener_por_id(usuario_id)
+            if usuario is None:
+                raise UsuarioNoExiste("La cuenta no existe.")
+            return usuario
+
+
+class ListarRoles:
+    def __init__(self, repositorio: RepositorioIAM, unidad: UnidadTrabajoIAM) -> None:
+        self.repositorio = repositorio
+        self.unidad = unidad
+
+    def ejecutar(self, *, actor_id: int) -> list[Rol]:
+        with _transaccion(self.unidad):
+            _exigir_superadmin(self.repositorio, actor_id)
+            return self.repositorio.listar_roles()
 
 
 class CambiarRolUsuario:
