@@ -8,6 +8,12 @@ Estas instrucciones rigen el desarrollo de backend y frontend en `recon_platform
 - El responsable del proyecto aprueba el alcance de cada entrega y revisa previamente cambios importantes de arquitectura, reglas funcionales, modelo físico, tecnologías, contratos Edge y tratamiento de datos. Dentro de un alcance aprobado, desarrollar las decisiones ordinarias sin solicitar autorización por cada línea. Ante una contradicción con el baseline o una resolución, detener la parte afectada, explicar alternativas y esperar decisión; no resolverla por conveniencia.
 - Trabajar sobre `main`. No crear ramas ni worktrees por iniciativa propia. **Solo el usuario realiza `git add`, commits y push**; no ejecutar estas operaciones ni cambiar remotos o historial.
 
+## Desarrollo por módulos en tres bloques
+
+- **Definición.** Antes de programar, consolidar alcance, reglas de negocio, permisos, criterios de aceptación, exclusiones y decisiones pendientes. Agrupar las preguntas necesarias para resolverlas conjuntamente cuando sea posible.
+- **Implementación integral.** Tras aprobar el alcance, desarrollar en un encargo coherente las capas, componentes, contratos, pruebas y documentación necesarios. Resolver detalles técnicos rutinarios, corregir fallos de pruebas y no volver a solicitar autorización para acciones ya permitidas.
+- **Validación y cierre.** Presentar resultados verificables y el incremento para revisión independiente. Reservar las operaciones MySQL reales, las migraciones y las acciones Git sujetas a autorización. Cerrar con un informe compacto de cambios, pruebas y pendientes.
+
 ## Arquitectura y dominio
 
 - Mantener un monolito modular por capacidades: Identity/IAM, Personas, Accesos, Integración Edge, Auditoría y Consultas/Reporting. Dentro de cada capacidad, separar API/presentación, aplicación/casos de uso, dominio/reglas e infraestructura/persistencia cuando exista funcionalidad que justifique esas piezas. Las dependencias deben apuntar hacia dominio y casos de uso; Flask, ORM, MySQL y hardware no definen reglas de negocio. Evitar importaciones directas de repositorios internos de otra capacidad.
