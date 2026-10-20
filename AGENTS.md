@@ -35,3 +35,29 @@ Estas instrucciones rigen el desarrollo de backend y frontend en `recon_platform
 ## Continuidad entre sesiones
 
 Antes de reanudar, especialmente tras alternar Codex y trabajo manual: leer el último commit y `git status`; revisar los archivos modificados y su diff; identificar las pruebas disponibles y los resultados realmente obtenidos; contrastar el estado actual con el alcance aprobado y las decisiones vigentes. No sobrescribir ni descartar trabajo ajeno. Si el código cambió, ajustar el plan antes de editar. Al terminar, informar archivos tocados, comportamiento, verificaciones efectuadas, riesgos y decisiones pendientes. No atribuir requisitos a la encuesta al personal de seguridad, que no se aplicó.
+
+## Preparación de sesiones, fuentes y verificación preventiva
+
+### 1. Preparación documental de Codex
+
+Antes de iniciar un nuevo incremento, preparar un manifiesto con el baseline vigente, las resoluciones aplicables, el alcance aprobado, los criterios de aceptación y el estado del repositorio. Codex debe confirmar que puede leer los documentos necesarios antes de realizar cambios que dependan de ellos. No asumir que los archivos disponibles en ChatGPT están disponibles automáticamente en Codex.
+
+### 2. Fuentes funcionales y de datos
+
+Durante el Bloque 1, el usuario y ChatGPT revisarán el modelo lógico, el Anexo 3 de diccionarios de datos del Entregable 3, el Contexto Maestro y las resoluciones aplicables. Las decisiones aprobadas se consolidarán en una especificación breve del incremento para entregarla a Codex; no es obligatorio adjuntar todo el Entregable 3 en cada nueva sesión. Validar los casos de uso, historias de usuario, tecnologías y descripciones de implementación de ese documento antes de adoptarlos. Conservar los nombres y conceptos del dominio y respetar las convenciones técnicas existentes.
+
+### 3. Tres bloques y responsabilidades
+
+Mantener los bloques de Definición, Implementación integral, y Validación y cierre. ChatGPT y el usuario coordinan la definición y la revisión independiente. Codex desarrolla el incremento aprobado, revisa su propio código, ejecuta las pruebas permitidas y corrige los errores que encuentre dentro del alcance autorizado. La autorrevisión de Codex no sustituye la revisión independiente posterior. Evitar comprobaciones repetitivas y la fragmentación innecesaria de tareas.
+
+### 4. MySQL, respaldos y migraciones
+
+Antes de operaciones reales que modifiquen bases de datos, comprobar dentro de procedimientos controlados la identidad del esquema, la revisión de migraciones, los permisos, los objetos MySQL y la compatibilidad del entorno Windows/Git Bash. Garantizar respaldos privados, completos y verificados cuando sean necesarios. Utilizar comprobaciones previas y posteriores, con autorización para las operaciones de escritura. No aplicar este procedimiento operativo completo a simples pruebas unitarias o cambios de código que no modifiquen MySQL.
+
+### 5. Diagnóstico seguro de errores
+
+Ante fallos, conservar la evidencia, identificar la etapa exacta y distinguir problemas de conexión, validación, rutas, permisos, entrada y escritura. No revelar credenciales ni información sensible. No realizar reintentos automáticos, restauraciones, eliminaciones ni cambios de privilegios improvisados. Corregir únicamente lo necesario y verificarlo antes de considerar un nuevo intento.
+
+### 6. Revisión de código y Git
+
+Codex debe revisar el código que implementa, sus pruebas, contratos y documentación. El usuario y ChatGPT realizarán posteriormente una revisión independiente de los cambios. Comprobar archivos modificados y nuevos, posibles secretos, respaldos, inconsistencias y finales de línea. Codex puede consultar Git; `git add`, commits y push quedan reservados al usuario. No ejecutar `git reset`, `git restore` ni otras operaciones Git de escritura sin autorización específica. El usuario conserva el control de los commits y del push.
