@@ -1,11 +1,15 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Recon Facial — autenticación humana",
+    "title": "Recon Facial ? API administrativa",
     "version": "1.0.0-prototipo",
-    "description": "Contrato provisional del primer incremento HTTP IAM. Las sesiones humanas se guardan en MySQL; la cookie contiene solo un identificador opaco. HTTPS es obligatorio, salvo la excepción explícita para HTTP local."
+    "description": "Contrato provisional de autenticaci?n IAM y administraci?n de Personas. Persona y UsuarioPlataforma son independientes. ACTIVO no implica enrolamiento ni acceso autorizado."
   },
-  "servers": [{"url": "/api/v1"}],
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
   "components": {
     "securitySchemes": {
       "sesionHumana": {
@@ -17,37 +21,396 @@
     "schemas": {
       "Identidad": {
         "type": "object",
-        "required": ["id_usuario", "login", "rol"],
+        "required": [
+          "id_usuario",
+          "login",
+          "rol"
+        ],
         "properties": {
-          "id_usuario": {"type": "integer", "minimum": 1},
-          "login": {"type": "string"},
-          "rol": {"type": "string", "enum": ["SUPERADMIN", "ADMINISTRADOR", "OPERADOR"]}
+          "id_usuario": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "login": {
+            "type": "string"
+          },
+          "rol": {
+            "type": "string",
+            "enum": [
+              "SUPERADMIN",
+              "ADMINISTRADOR",
+              "OPERADOR"
+            ]
+          }
         }
       },
       "CuentaPlataforma": {
         "type": "object",
-        "required": ["id_usuario", "login", "rol", "estado"],
+        "required": [
+          "id_usuario",
+          "login",
+          "rol",
+          "estado"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id_usuario": {"type": "integer", "minimum": 1},
-          "login": {"type": "string"},
-          "rol": {"type": "string", "enum": ["SUPERADMIN", "ADMINISTRADOR", "OPERADOR"]},
-          "estado": {"type": "string", "enum": ["ACTIVO", "INACTIVO"]}
+          "id_usuario": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "login": {
+            "type": "string"
+          },
+          "rol": {
+            "type": "string",
+            "enum": [
+              "SUPERADMIN",
+              "ADMINISTRADOR",
+              "OPERADOR"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVO",
+              "INACTIVO"
+            ]
+          }
         }
       },
       "RolDisponible": {
         "type": "object",
-        "required": ["nombre", "asignable"],
+        "required": [
+          "nombre",
+          "asignable"
+        ],
         "additionalProperties": false,
         "properties": {
-          "nombre": {"type": "string", "enum": ["SUPERADMIN", "ADMINISTRADOR", "OPERADOR"]},
-          "asignable": {"type": "boolean", "description": "SUPERADMIN se reserva al bootstrap inicial."}
+          "nombre": {
+            "type": "string",
+            "enum": [
+              "SUPERADMIN",
+              "ADMINISTRADOR",
+              "OPERADOR"
+            ]
+          },
+          "asignable": {
+            "type": "boolean",
+            "description": "SUPERADMIN se reserva al bootstrap inicial."
+          }
         }
       },
       "Error": {
         "type": "object",
-        "required": ["error"],
-        "properties": {"error": {"type": "string"}}
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoPersona": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id_tipo_persona",
+          "nombre",
+          "descripcion",
+          "estado"
+        ],
+        "properties": {
+          "id_tipo_persona": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "nombre": {
+            "type": "string",
+            "enum": [
+              "ESTUDIANTE",
+              "DOCENTE",
+              "ADMINISTRATIVO",
+              "SERVICIOS_GENERALES",
+              "VISITANTE",
+              "PERSONAL_SEGURIDAD"
+            ]
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVO",
+              "INACTIVO"
+            ]
+          }
+        }
+      },
+      "PersonaEntrada": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "primer_nombre",
+          "primer_apellido",
+          "tipo_documento",
+          "numero_documento",
+          "tipo_persona"
+        ],
+        "properties": {
+          "primer_nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "segundo_nombre": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "primer_apellido": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "segundo_apellido": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "tipo_documento": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "description": "Texto libre provisional; cat?logo definitivo pendiente."
+          },
+          "numero_documento": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "identificador_institucional": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "Obligatorio para ESTUDIANTE; opcional para otras categor?as mientras se definen sus reglas."
+          },
+          "tipo_persona": {
+            "type": "string",
+            "enum": [
+              "ESTUDIANTE",
+              "DOCENTE",
+              "ADMINISTRATIVO",
+              "SERVICIOS_GENERALES",
+              "VISITANTE",
+              "PERSONAL_SEGURIDAD"
+            ]
+          }
+        }
+      },
+      "PersonaCambio": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "primer_nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "segundo_nombre": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "primer_apellido": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "segundo_apellido": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "tipo_documento": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "description": "Texto libre provisional; cat?logo definitivo pendiente."
+          },
+          "numero_documento": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "identificador_institucional": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "Obligatorio para ESTUDIANTE; opcional para otras categor?as mientras se definen sus reglas."
+          },
+          "tipo_persona": {
+            "type": "string",
+            "enum": [
+              "ESTUDIANTE",
+              "DOCENTE",
+              "ADMINISTRATIVO",
+              "SERVICIOS_GENERALES",
+              "VISITANTE",
+              "PERSONAL_SEGURIDAD"
+            ]
+          }
+        }
+      },
+      "PersonaEstado": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "estado"
+        ],
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVO",
+              "INACTIVO"
+            ]
+          }
+        }
+      },
+      "Persona": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id_persona",
+          "primer_nombre",
+          "segundo_nombre",
+          "primer_apellido",
+          "segundo_apellido",
+          "tipo_documento",
+          "numero_documento",
+          "identificador_institucional",
+          "tipo_persona",
+          "estado",
+          "fecha_creacion",
+          "fecha_actualizacion"
+        ],
+        "properties": {
+          "id_persona": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "primer_nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "segundo_nombre": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "primer_apellido": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "segundo_apellido": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "tipo_documento": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "description": "Texto libre provisional; cat?logo definitivo pendiente."
+          },
+          "numero_documento": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "identificador_institucional": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "Obligatorio para ESTUDIANTE; opcional para otras categor?as mientras se definen sus reglas."
+          },
+          "tipo_persona": {
+            "type": "string",
+            "enum": [
+              "ESTUDIANTE",
+              "DOCENTE",
+              "ADMINISTRATIVO",
+              "SERVICIOS_GENERALES",
+              "VISITANTE",
+              "PERSONAL_SEGURIDAD"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVO",
+              "INACTIVO"
+            ]
+          },
+          "fecha_creacion": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC"
+          },
+          "fecha_actualizacion": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC"
+          }
+        }
+      },
+      "ListaPersonas": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "personas",
+          "limite",
+          "desplazamiento"
+        ],
+        "properties": {
+          "personas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Persona"
+            }
+          },
+          "limite": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "desplazamiento": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          }
+        }
+      },
+      "ListaTiposPersona": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tipos"
+        ],
+        "properties": {
+          "tipos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TipoPersona"
+            }
+          }
+        }
       }
     }
   },
@@ -60,53 +423,197 @@
           "200": {
             "description": "Token CSRF asociado a la cookie de sesión",
             "headers": {
-              "Set-Cookie": {"description": "recon_session; HttpOnly; SameSite=Lax; Path=/api/v1; Secure en HTTPS", "schema": {"type": "string"}}
+              "Set-Cookie": {
+                "description": "recon_session; HttpOnly; SameSite=Lax; Path=/api/v1; Secure en HTTPS",
+                "schema": {
+                  "type": "string"
+                }
+              }
             },
-            "content": {"application/json": {"schema": {"type": "object", "required": ["csrf_token"], "properties": {"csrf_token": {"type": "string"}}}}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "csrf_token"
+                  ],
+                  "properties": {
+                    "csrf_token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           },
-          "403": {"description": "Transporte HTTP no autorizado"},
-          "503": {"description": "Autenticación no disponible"}
+          "403": {
+            "description": "Transporte HTTP no autorizado"
+          },
+          "503": {
+            "description": "Autenticación no disponible"
+          }
         }
       }
     },
     "/auth/login": {
       "post": {
         "summary": "Iniciar sesión con usuario y contraseña",
-        "security": [{"sesionHumana": []}],
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
         "description": "Requiere cookie y X-CSRF-Token obtenidos de /auth/csrf. Al iniciar correctamente, rota la cookie y entrega un nuevo token CSRF en la cabecera de respuesta. Máximo diez intentos por IP en cinco minutos por proceso.",
-        "parameters": [{"name": "X-CSRF-Token", "in": "header", "required": true, "schema": {"type": "string"}}],
-        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["login", "contrasena"], "properties": {"login": {"type": "string"}, "contrasena": {"type": "string", "format": "password"}}}}}},
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "login",
+                  "contrasena"
+                ],
+                "properties": {
+                  "login": {
+                    "type": "string"
+                  },
+                  "contrasena": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
-          "200": {"description": "Sesión activa", "headers": {"X-CSRF-Token": {"schema": {"type": "string"}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Identidad"}}}},
-          "400": {"description": "Cuerpo inválido"},
-          "401": {"description": "Credenciales inválidas o cuenta inactiva"},
-          "403": {"description": "CSRF inválido"},
-          "429": {"description": "Demasiados intentos", "headers": {"Retry-After": {"schema": {"type": "string"}}}},
-          "503": {"description": "Autenticación no disponible"}
+          "200": {
+            "description": "Sesión activa",
+            "headers": {
+              "X-CSRF-Token": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identidad"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo inválido"
+          },
+          "401": {
+            "description": "Credenciales inválidas o cuenta inactiva"
+          },
+          "403": {
+            "description": "CSRF inválido"
+          },
+          "429": {
+            "description": "Demasiados intentos",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Autenticación no disponible"
+          }
         }
       }
     },
     "/auth/me": {
       "get": {
         "summary": "Consultar identidad, estado y rol vigentes de la sesión",
-        "security": [{"sesionHumana": []}],
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
         "responses": {
-          "200": {"description": "Cuenta activa", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Identidad"}}}},
-          "401": {"description": "Sin sesión activa o cuenta inactiva"},
-          "503": {"description": "No se pudo comprobar la sesión por indisponibilidad del servicio"}
+          "200": {
+            "description": "Cuenta activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identidad"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión activa o cuenta inactiva"
+          },
+          "503": {
+            "description": "No se pudo comprobar la sesión por indisponibilidad del servicio"
+          }
         }
       }
     },
     "/auth/logout": {
       "post": {
         "summary": "Revocar solo la sesión actual",
-        "security": [{"sesionHumana": []}],
-        "parameters": [{"name": "X-CSRF-Token", "in": "header", "required": true, "schema": {"type": "string"}}],
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "200": {"description": "Sesión revocada", "content": {"application/json": {"schema": {"type": "object", "properties": {"estado": {"type": "string", "enum": ["cerrada"]}}}}}},
-          "401": {"description": "Sin sesión activa"},
-          "403": {"description": "CSRF inválido"},
-          "503": {"description": "No se pudo comprobar o cerrar la sesión por indisponibilidad del servicio"}
+          "200": {
+            "description": "Sesión revocada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "estado": {
+                      "type": "string",
+                      "enum": [
+                        "cerrada"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión activa"
+          },
+          "403": {
+            "description": "CSRF inválido"
+          },
+          "503": {
+            "description": "No se pudo comprobar o cerrar la sesión por indisponibilidad del servicio"
+          }
         }
       }
     },
@@ -114,58 +621,249 @@
       "get": {
         "summary": "Consultar el catálogo de roles",
         "description": "Solo SUPERADMIN. El rol SUPERADMIN es visible, pero no asignable mediante esta API.",
-        "security": [{"sesionHumana": []}],
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
         "responses": {
-          "200": {"description": "Roles disponibles", "content": {"application/json": {"schema": {"type": "object", "required": ["roles"], "properties": {"roles": {"type": "array", "items": {"$ref": "#/components/schemas/RolDisponible"}}}}}}},
-          "401": {"description": "Sin sesión activa o cuenta inactiva"},
-          "403": {"description": "Rol insuficiente o transporte no autorizado"},
-          "503": {"description": "No se pudo comprobar la sesión o consultar IAM"}
+          "200": {
+            "description": "Roles disponibles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "roles"
+                  ],
+                  "properties": {
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RolDisponible"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión activa o cuenta inactiva"
+          },
+          "403": {
+            "description": "Rol insuficiente o transporte no autorizado"
+          },
+          "503": {
+            "description": "No se pudo comprobar la sesión o consultar IAM"
+          }
         }
       }
     },
     "/iam/usuarios": {
       "get": {
         "summary": "Listar cuentas de plataforma con paginación acotada",
-        "security": [{"sesionHumana": []}],
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
         "parameters": [
-          {"name": "limite", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50}},
-          {"name": "desplazamiento", "in": "query", "schema": {"type": "integer", "minimum": 0, "maximum": 1000000, "default": 0}}
+          {
+            "name": "limite",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "desplazamiento",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            }
+          }
         ],
         "responses": {
-          "200": {"description": "Cuentas sin hashes ni auditorías", "content": {"application/json": {"schema": {"type": "object", "required": ["usuarios", "limite", "desplazamiento"], "properties": {"usuarios": {"type": "array", "items": {"$ref": "#/components/schemas/CuentaPlataforma"}}, "limite": {"type": "integer"}, "desplazamiento": {"type": "integer"}}}}}},
-          "400": {"description": "Paginación inválida"},
-          "401": {"description": "Sin sesión activa o cuenta inactiva"},
-          "403": {"description": "Rol insuficiente o transporte no autorizado"},
-          "503": {"description": "No se pudo comprobar la sesión o consultar IAM"}
+          "200": {
+            "description": "Cuentas sin hashes ni auditorías",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "usuarios",
+                    "limite",
+                    "desplazamiento"
+                  ],
+                  "properties": {
+                    "usuarios": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CuentaPlataforma"
+                      }
+                    },
+                    "limite": {
+                      "type": "integer"
+                    },
+                    "desplazamiento": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Paginación inválida"
+          },
+          "401": {
+            "description": "Sin sesión activa o cuenta inactiva"
+          },
+          "403": {
+            "description": "Rol insuficiente o transporte no autorizado"
+          },
+          "503": {
+            "description": "No se pudo comprobar la sesión o consultar IAM"
+          }
         }
       },
       "post": {
         "summary": "Crear cuenta ADMINISTRADOR u OPERADOR",
         "description": "Solo SUPERADMIN. No permite crear cuentas SUPERADMIN ni registro público. La contraseña se envía por HTTPS y solo se almacena como hash.",
-        "security": [{"sesionHumana": []}],
-        "parameters": [{"name": "X-CSRF-Token", "in": "header", "required": true, "schema": {"type": "string"}}],
-        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["login", "contrasena", "rol"], "additionalProperties": false, "properties": {"login": {"type": "string"}, "contrasena": {"type": "string", "format": "password", "minLength": 12, "maxLength": 1024}, "rol": {"type": "string", "enum": ["ADMINISTRADOR", "OPERADOR"]}}}}}},
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "login",
+                  "contrasena",
+                  "rol"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "login": {
+                    "type": "string"
+                  },
+                  "contrasena": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 12,
+                    "maxLength": 1024
+                  },
+                  "rol": {
+                    "type": "string",
+                    "enum": [
+                      "ADMINISTRADOR",
+                      "OPERADOR"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
-          "201": {"description": "Cuenta creada y auditada", "headers": {"Location": {"schema": {"type": "string"}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CuentaPlataforma"}}}},
-          "400": {"description": "Cuerpo o campos inválidos"},
-          "401": {"description": "Sin sesión activa o cuenta inactiva"},
-          "403": {"description": "CSRF inválido, rol insuficiente o transporte no autorizado"},
-          "409": {"description": "Login duplicado"},
-          "503": {"description": "No se pudo comprobar la sesión o administrar IAM"}
+          "201": {
+            "description": "Cuenta creada y auditada",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuentaPlataforma"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo o campos inválidos"
+          },
+          "401": {
+            "description": "Sin sesión activa o cuenta inactiva"
+          },
+          "403": {
+            "description": "CSRF inválido, rol insuficiente o transporte no autorizado"
+          },
+          "409": {
+            "description": "Login duplicado"
+          },
+          "503": {
+            "description": "No se pudo comprobar la sesión o administrar IAM"
+          }
         }
       }
     },
     "/iam/usuarios/{usuario_id}": {
       "get": {
         "summary": "Consultar una cuenta de plataforma",
-        "security": [{"sesionHumana": []}],
-        "parameters": [{"name": "usuario_id", "in": "path", "required": true, "schema": {"type": "integer", "minimum": 1}}],
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
         "responses": {
-          "200": {"description": "Cuenta sin hash ni auditorías", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CuentaPlataforma"}}}},
-          "401": {"description": "Sin sesión activa o cuenta inactiva"},
-          "403": {"description": "Rol insuficiente o transporte no autorizado"},
-          "404": {"description": "Cuenta inexistente"},
-          "503": {"description": "No se pudo comprobar la sesión o consultar IAM"}
+          "200": {
+            "description": "Cuenta sin hash ni auditorías",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuentaPlataforma"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión activa o cuenta inactiva"
+          },
+          "403": {
+            "description": "Rol insuficiente o transporte no autorizado"
+          },
+          "404": {
+            "description": "Cuenta inexistente"
+          },
+          "503": {
+            "description": "No se pudo comprobar la sesión o consultar IAM"
+          }
         }
       }
     },
@@ -173,19 +871,79 @@
       "patch": {
         "summary": "Cambiar el rol de una cuenta administrable",
         "description": "La identidad histórica de la cuenta se conserva. No permite modificar el SUPERADMIN inicial ni asignar SUPERADMIN.",
-        "security": [{"sesionHumana": []}],
-        "parameters": [
-          {"name": "usuario_id", "in": "path", "required": true, "schema": {"type": "integer", "minimum": 1}},
-          {"name": "X-CSRF-Token", "in": "header", "required": true, "schema": {"type": "string"}}
+        "security": [
+          {
+            "sesionHumana": []
+          }
         ],
-        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["rol"], "additionalProperties": false, "properties": {"rol": {"type": "string", "enum": ["ADMINISTRADOR", "OPERADOR"]}}}}}},
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "rol"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "rol": {
+                    "type": "string",
+                    "enum": [
+                      "ADMINISTRADOR",
+                      "OPERADOR"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
-          "200": {"description": "Rol actualizado o ya vigente", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CuentaPlataforma"}}}},
-          "400": {"description": "Rol inválido"},
-          "401": {"description": "Sin sesión activa o cuenta inactiva"},
-          "403": {"description": "CSRF inválido, rol insuficiente o cuenta SUPERADMIN protegida"},
-          "404": {"description": "Cuenta inexistente"},
-          "503": {"description": "No se pudo comprobar la sesión o administrar IAM"}
+          "200": {
+            "description": "Rol actualizado o ya vigente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuentaPlataforma"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Rol inválido"
+          },
+          "401": {
+            "description": "Sin sesión activa o cuenta inactiva"
+          },
+          "403": {
+            "description": "CSRF inválido, rol insuficiente o cuenta SUPERADMIN protegida"
+          },
+          "404": {
+            "description": "Cuenta inexistente"
+          },
+          "503": {
+            "description": "No se pudo comprobar la sesión o administrar IAM"
+          }
         }
       }
     },
@@ -193,19 +951,659 @@
       "patch": {
         "summary": "Activar o desactivar una cuenta administrable",
         "description": "La desactivación revoca sus sesiones. No permite desactivar el SUPERADMIN inicial.",
-        "security": [{"sesionHumana": []}],
-        "parameters": [
-          {"name": "usuario_id", "in": "path", "required": true, "schema": {"type": "integer", "minimum": 1}},
-          {"name": "X-CSRF-Token", "in": "header", "required": true, "schema": {"type": "string"}}
+        "security": [
+          {
+            "sesionHumana": []
+          }
         ],
-        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["estado"], "additionalProperties": false, "properties": {"estado": {"type": "string", "enum": ["ACTIVO", "INACTIVO"]}}}}}},
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "estado"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "estado": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVO",
+                      "INACTIVO"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
-          "200": {"description": "Estado actualizado o ya vigente", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CuentaPlataforma"}}}},
-          "400": {"description": "Estado inválido"},
-          "401": {"description": "Sin sesión activa o cuenta inactiva"},
-          "403": {"description": "CSRF inválido, rol insuficiente o cuenta SUPERADMIN protegida"},
-          "404": {"description": "Cuenta inexistente"},
-          "503": {"description": "No se pudo comprobar la sesión o administrar IAM"}
+          "200": {
+            "description": "Estado actualizado o ya vigente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuentaPlataforma"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Estado inválido"
+          },
+          "401": {
+            "description": "Sin sesión activa o cuenta inactiva"
+          },
+          "403": {
+            "description": "CSRF inválido, rol insuficiente o cuenta SUPERADMIN protegida"
+          },
+          "404": {
+            "description": "Cuenta inexistente"
+          },
+          "503": {
+            "description": "No se pudo comprobar la sesión o administrar IAM"
+          }
+        }
+      }
+    },
+    "/personas": {
+      "get": {
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "description": "Solo SUPERADMIN y ADMINISTRADOR. Respuesta Cache-Control: no-store. Sin acceso para OPERADOR.",
+        "summary": "Listar y filtrar Personas",
+        "parameters": [
+          {
+            "name": "limite",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "desplazamiento",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            }
+          },
+          {
+            "name": "tipo_documento",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20,
+              "description": "Texto libre provisional; cat?logo definitivo pendiente."
+            }
+          },
+          {
+            "name": "numero_documento",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 30
+            }
+          },
+          {
+            "name": "identificador_institucional",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true,
+              "maxLength": 50,
+              "description": "Obligatorio para ESTUDIANTE; opcional para otras categor?as mientras se definen sus reglas."
+            }
+          },
+          {
+            "name": "tipo_persona",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ESTUDIANTE",
+                "DOCENTE",
+                "ADMINISTRATIVO",
+                "SERVICIOS_GENERALES",
+                "VISITANTE",
+                "PERSONAL_SEGURIDAD"
+              ]
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVO",
+                "INACTIVO"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "P?gina de Personas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaPersonas"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inv?lida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesi?n ausente o inv?lida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "description": "Solo SUPERADMIN y ADMINISTRADOR. Respuesta Cache-Control: no-store. Sin acceso para OPERADOR.",
+        "summary": "Registrar Persona administrativa",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Token vinculado a la sesi?n; obligatorio en POST y PATCH."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Persona registrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Persona"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inv?lida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesi?n ausente o inv?lida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Documento o identificador institucional duplicado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/personas/tipos": {
+      "get": {
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "description": "Solo SUPERADMIN y ADMINISTRADOR. Respuesta Cache-Control: no-store. Sin acceso para OPERADOR.",
+        "summary": "Consultar cat?logo controlado de TipoPersona",
+        "responses": {
+          "200": {
+            "description": "Seis tipos de Persona",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaTiposPersona"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesi?n ausente o inv?lida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/personas/{id_persona}": {
+      "get": {
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "description": "Solo SUPERADMIN y ADMINISTRADOR. Respuesta Cache-Control: no-store. Sin acceso para OPERADOR.",
+        "summary": "Consultar Persona por ID",
+        "parameters": [
+          {
+            "name": "id_persona",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Persona",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Persona"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesi?n ausente o inv?lida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Persona no encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "description": "Solo SUPERADMIN y ADMINISTRADOR. Respuesta Cache-Control: no-store. Sin acceso para OPERADOR.",
+        "summary": "Actualizar campos administrativos de Persona",
+        "parameters": [
+          {
+            "name": "id_persona",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Token vinculado a la sesi?n; obligatorio en POST y PATCH."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonaCambio"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Persona actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Persona"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inv?lida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesi?n ausente o inv?lida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Persona no encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Documento o identificador institucional duplicado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/personas/{id_persona}/estado": {
+      "patch": {
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "description": "Solo SUPERADMIN y ADMINISTRADOR. Respuesta Cache-Control: no-store. Sin acceso para OPERADOR. No altera plantillas biom?tricas.",
+        "summary": "Activar o desactivar Persona",
+        "parameters": [
+          {
+            "name": "id_persona",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Token vinculado a la sesi?n; obligatorio en POST y PATCH."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonaEstado"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Estado actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Persona"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inv?lida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesi?n ausente o inv?lida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Persona no encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
         }
       }
     }

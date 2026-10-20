@@ -31,7 +31,7 @@ al módulo Identidad.
 
 - Cada Persona tiene un TipoPersona principal actual.
 - Una Persona puede existir sin una cuenta web.
-- Una Persona puede tener como máximo una cuenta web.
+- La vinculación futura entre Persona y UsuarioPlataforma y su cardinalidad siguen PENDIENTES. El prototipo no crea FK ni vínculo automático.
 - El catálogo inicial TipoPersona sigue el Contexto Maestro v1.5.
 
 Estas decisiones pueden evolucionar mediante el proceso
@@ -52,8 +52,8 @@ Representará las entidades y reglas de negocio.
 Infraestructura:
 Implementará la persistencia y las adaptaciones externas.
 
-Actualmente existen dominio, aplicación e infraestructura; la API se
-incorporará cuando sus contratos, autenticación y permisos sean aprobados.
+El incremento HTTP administrativo incorpora rutas, casos de uso y auditoría
+persistente propios de Personas.
 
 ## 6. Capacidades funcionales candidatas
 
@@ -75,12 +75,35 @@ Registro de Personas y Persistencia MySQL. Continúan abiertos:
 - Catálogo definitivo de tipos documentales y reglas avanzadas de formato.
 - Obligatoriedad del identificador institucional para SERVICIOS_GENERALES.
 - Reglas exactas de activación y desactivación más allá del estado inicial.
-- Permisos de cada rol para administrar personas.
-- Contratos HTTP y validaciones de entrada.
+- Permisos y contrato HTTP: las reglas de este incremento son PROVISIONALES y
+  requieren revisión independiente antes de su aplicación en MySQL.
 - Relación operativa con el enrolamiento biométrico.
 - Validación de la migración en MySQL; el modelo físico permanece provisional.
 
-No se implementarán reglas ficticias para cerrar estos puntos.
+No se implementarán reglas ficticias para cerrar los demás puntos.
+
+## API administrativa provisional
+
+`GET /api/v1/personas/tipos`, `GET /api/v1/personas`,
+`GET /api/v1/personas/{id_persona}`, `POST /api/v1/personas`,
+`PATCH /api/v1/personas/{id_persona}` y
+`PATCH /api/v1/personas/{id_persona}/estado` requieren sesión activa y rol
+SUPERADMIN o ADMINISTRADOR. POST y PATCH exigen CSRF. El listado tiene límite
+predeterminado 50, máximo 100, y filtros exactos por documento, identificador,
+TipoPersona y estado. OPERADOR no recibe datos detallados por estas rutas.
+
+Las escrituras registran actor, Persona, operación y fecha UTC en
+`auditoria_personas` dentro de la misma transacción. La migración
+`0004_auditoria_personas` está preparada y **no aplicada** en este incremento.
+La tabla referencia la cuenta actora para integridad de auditoría; no vincula
+Persona con UsuarioPlataforma. El estado ACTIVO/INACTIVO no altera biometría.
+Este incremento no completa CU-03 ni incluye enrolamiento.
+
+Esta auditoría especializada registra solo escrituras humanas exitosas de
+Personas. Es una solución **PROVISIONAL** para este incremento, no la
+implementación física definitiva de `EventoAuditoria` del Contexto Maestro
+v1.5. La entidad lógica general también contempla eventos automáticos con
+actor nullable; su catálogo, retención y modelo físico continúan PENDIENTES.
 
 ## 8. Seguridad y biometría
 

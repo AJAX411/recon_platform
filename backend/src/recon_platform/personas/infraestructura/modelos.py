@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.dialects import mysql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -73,3 +73,24 @@ class PersonaModelo(db.Model):
     )
 
     tipo_persona: Mapped[TipoPersonaModelo] = relationship(lazy="joined")
+
+
+class AuditoriaPersonasModelo(db.Model):
+    """Traza mínima de cambios administrativos; sin instantáneas de datos personales."""
+
+    __tablename__ = "auditoria_personas"
+    __table_args__ = (CheckConstraint(
+        "accion IN ('REGISTRAR_PERSONA', 'ACTUALIZAR_PERSONA', 'ACTIVAR_PERSONA', 'DESACTIVAR_PERSONA')",
+        name="ck_auditoria_personas_accion",
+    ),)
+
+    id_auditoria: Mapped[int] = mapped_column(ENTERO_ID, primary_key=True, autoincrement=True)
+    actor_id: Mapped[int] = mapped_column(ENTERO_ID, ForeignKey(
+        "usuario_plataforma.id_usuario", name="fk_auditoria_personas_actor", ondelete="RESTRICT"
+    ), nullable=False)
+    id_persona: Mapped[int] = mapped_column(ENTERO_ID, ForeignKey(
+        "persona.id_persona", name="fk_auditoria_personas_persona", ondelete="RESTRICT"
+    ), nullable=False, index=True)
+    accion: Mapped[str] = mapped_column(String(30), nullable=False)
+    fecha: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False,
+                                            default=_ahora_utc_para_mysql)

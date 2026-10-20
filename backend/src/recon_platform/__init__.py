@@ -48,6 +48,10 @@ def create_app(*, pruebas: bool = False) -> Flask:
 
     app.register_blueprint(bp_administracion_iam)
 
+    from recon_platform.personas.api import bp as bp_personas
+
+    app.register_blueprint(bp_personas)
+
     from recon_platform.identidad.infraestructura.cli import registrar_comandos
 
     registrar_comandos(app)

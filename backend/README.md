@@ -10,16 +10,22 @@ dispone de entidades de dominio, casos de uso internos `RegistrarPersona` y
 aplicada y verificada manualmente en `recon_tests` y `recon_dev`; el responsable
 informó 10 pruebas de integración MySQL aprobadas y persistencia comprobada en
 desarrollo. Son resultados históricos, no una ejecución de este incremento.
-El registro interno es una parte de CU-03/HU-04; no completa esos casos de uso.
-No hay endpoints de Personas ni enrolamiento facial.
+El registro administrativo es una parte de CU-03/HU-04; no completa esos casos de uso.
+El incremento actual prepara la API HTTP administrativa de Personas. Según la
+validación reportada por el responsable, `0004_auditoria_personas` y 26 pruebas
+de integración MySQL ya fueron verificadas en `recon_tests`; `recon_dev` sigue
+pendiente de migración.
+Los permisos SUPERADMIN/ADMINISTRADOR, los filtros y el contrato HTTP son
+decisiones PROVISIONALES de este encargo. La API no implementa enrolamiento
+facial; no completa CU-03.
 
 Identity/IAM incorpora Rol, UsuarioPlataforma independiente de Persona, casos
 de uso administrativos exclusivos de SUPERADMIN, verificación de credenciales,
 auditoría de operaciones exitosas y un comando explícito de bootstrap. La
 migración `0002_identity_iam` fue aplicada y verificada en ambas bases por el
 responsable. La primera cuenta SUPERADMIN existe en desarrollo. El incremento
-actual añade endpoints de autenticación HTTP, sin registro público ni endpoints
-de administración de cuentas. `0003_sesiones_iam` fue aplicada y validada en
+anterior añadió endpoints de autenticación y administración IAM, sin registro
+público. `0003_sesiones_iam` fue aplicada y validada en
 `recon_tests` y `recon_dev`, según las ejecuciones reportadas por el responsable.
 
 Organización provisional: API/presentación → aplicación/casos de uso →
@@ -98,7 +104,8 @@ proporcionar las variables al proceso sin imprimir las contraseñas.
 Antes de cada conexión de prueba se exige `mysql+pymysql` hacia
 `127.0.0.1:3306`, base `recon_tests` y usuario `recon_test_app`. Se consulta
 también la identidad real de la conexión, una revisión conocida de Alembic
-(`0001_personas`, `0002_identity_iam` o `0003_sesiones_iam`) y el motor InnoDB de las tablas
+(`0001_personas`, `0002_identity_iam`, `0003_sesiones_iam` o
+`0004_auditoria_personas`) y el motor InnoDB de las tablas
 correspondientes. Cualquier fallo detiene la
 ejecución antes de las escrituras. Las pruebas no crean ni migran tablas y no
 usan `create_all`, `drop_all` ni borrados globales. Cada prueba de datos se
@@ -136,6 +143,124 @@ Remove-Item Env:RECON_RUN_MYSQL_INTEGRATION
 ```
 
 Las pruebas unitarias no sustituyen esta validación MySQL.
+
+Las pruebas nuevas de `tests/integration/test_personas_http_mysql.py` requieren
+la revisión exacta `0004_auditoria_personas`. El responsable informó que las
+ejecutó en `recon_tests` tras aplicar y revisar esa migración.
+El fixture verifica nombre de base, usuario, puerto, revisión y tablas InnoDB
+antes de permitir escrituras; cada prueba revierte su transacción externa.
+
+## Procedimiento 0004 en recon_tests
+
+La auditoría específica de Personas es **PROVISIONAL**. Registra operaciones
+humanas exitosas sobre Personas; no sustituye al `EventoAuditoria` lógico
+general de v1.5, que también contempla eventos automáticos y actor nullable.
+La política general de auditoría y retención continúa PENDIENTE.
+
+[`scripts/verificar_recon_tests_0004.py`](./scripts/verificar_recon_tests_0004.py)
+comprueba exclusivamente por lectura la identidad real
+`recon_tests`/`recon_test_app`, revisión exacta `0003` antes y `0004` después,
+tablas InnoDB, catálogos, restricciones anteriores, nueva tabla, columnas,
+tipos, PK, FK con `RESTRICT`, CHECK, índice y ausencia de registros temporales.
+Falla cerrado ante cualquier discrepancia. No muestra contraseñas ni URL.
+
+[`scripts/aplicar_0004_recon_tests.sh`](./scripts/aplicar_0004_recon_tests.sh)
+se utilizó en `recon_tests`, según el estado confirmado por el responsable. Exige
+`RECON_AUTORIZAR_MIGRACION_0004=1`, contraseña introducida de forma
+oculta, verificación previa, respaldo privado fuera del repositorio,
+confirmación literal y nueva verificación inmediata. Aplica únicamente el
+objetivo `0004_auditoria_personas` con la fábrica en modo de pruebas. No debe
+usarse para `recon_dev` ni ante un esquema inesperado. Si falla tras comenzar
+la migración, se detiene y requiere inspección manual; no intenta restaurar ni
+borrar datos automáticamente.
+
+[`scripts/probar_0004_recon_tests.sh`](./scripts/probar_0004_recon_tests.sh)
+requiere autorización explícita
+`RECON_AUTORIZAR_PRUEBAS_MYSQL_0004=1` y comprobación `0004` antes de activar
+las pruebas de integración MySQL. Las pruebas usan transacciones externas con
+savepoints y rollback, y el script repite la verificación de ausencia de
+residuos al finalizar. Los procedimientos históricos de `0003` se conservan.
+
+## Procedimiento 0004 de recon_dev — migración pendiente
+
+[`scripts/verificar_recon_dev_0004.py`](./scripts/verificar_recon_dev_0004.py)
+comprueba por lectura la identidad real `recon_dev`/`recon_dev_app`, revisión
+exacta `0003` antes y `0004` después, tablas InnoDB, esquema y restricciones
+previas, Persona ficticia `id_persona=1`, roles, único SUPERADMIN inicial activo
+y su auditoría de bootstrap. Tras `0004`, reutiliza el verificador probado de
+la nueva tabla, incluido el CHECK, y exige que `auditoria_personas` esté vacía.
+Compara además huellas y cantidades de todas las filas de las seis tablas
+preexistentes con un estado privado creado antes del respaldo. El verificador
+no modifica MySQL ni muestra filas, contraseñas, hashes o tokens.
+Con `--antes --guardar-estado`, primero verifica la conexión, el esquema y los
+datos, y después crea el JSON privado con `O_EXCL`, sin sobrescribir un archivo
+existente. Los errores distinguen conexión MySQL, validación de esquema/datos y
+escritura del estado sin mostrar detalles de excepciones. El último intento se
+reportó detenido en esta invocación; su causa operativa aún no está confirmada.
+
+[`scripts/aplicar_0004_recon_dev.sh`](./scripts/aplicar_0004_recon_dev.sh)
+queda preparado para una **autorización posterior**, tras revisión independiente.
+Exige `RECON_AUTORIZAR_MIGRACION_0004_RECON_DEV=1`, contraseña oculta de
+`recon_dev_app`, verificación inicial, respaldo con `mysqldump` y marcadores de
+integridad, confirmación literal `APLICAR_0004_RECON_DEV` y segunda verificación
+inmediatamente antes de `db upgrade 0004_auditoria_personas`. Comprueba el
+resultado y la preservación de las filas anteriores. El respaldo y el estado
+quedan en una carpeta privada de `~/ReconFacialBackups`, fuera del repositorio.
+La aplicación debe estar detenida y no debe haber escrituras concurrentes;
+de otro modo la comparación de datos detendrá el procedimiento. Un fallo exige
+inspección manual; el script no restaura, elimina ni reintenta automáticamente.
+
+El intento anterior se detuvo durante `mysqldump`, antes de confirmar o migrar:
+`--events` exige el privilegio `EVENT` de `recon_dev`; `--routines` exige
+privilegios de lectura global para el volcado. No se amplían los permisos de
+`recon_dev_app`. `mysqldump` también requiere `TRIGGER` para volcar triggers.
+El procedimiento usa `--skip-events --skip-routines --skip-triggers` para
+respaldar tablas y filas con esa cuenta. Ese respaldo solo cubre todos los
+objetos de `recon_dev` si se acredita que no existen eventos, rutinas ni triggers.
+Las comprobaciones administrativas históricas comunicaron cero en las tres
+categorías; el procedimiento no presume que el estado siga igual.
+
+[`scripts/verificar_objetos_recon_dev_0004.py`](./scripts/verificar_objetos_recon_dev_0004.py)
+realiza esa comprobación de solo lectura con una cuenta administrativa distinta,
+antes del respaldo y otra vez antes de migrar. Fija `127.0.0.1:3306/recon_dev`,
+contrasta la identidad real, examina `SHOW GRANTS FOR CURRENT_USER()` y exige
+concesiones directas que permitan ver **todas** las rutinas (global `SELECT` o
+`SHOW_ROUTINE`), **todos** los eventos (`EVENT` global o sobre `recon_dev`) y
+**todos** los triggers (`TRIGGER` global o sobre todo `recon_dev`). Un permiso
+`TRIGGER` limitado a algunas tablas no acredita visibilidad completa. Después
+exige cero filas para `recon_dev` en `INFORMATION_SCHEMA.ROUTINES`,
+`INFORMATION_SCHEMA.EVENTS` y `INFORMATION_SCHEMA.TRIGGERS`. Una lista vacía
+sin esos privilegios, un conteo ambiguo o una revocación detienen el proceso.
+También se detiene si existe cualquier objeto de esas categorías; en ese caso
+se necesita otro plan de respaldo que lo incluya.
+La contraseña administrativa se pide oculta y solo se pasa al verificador, nunca
+a `mysqldump`, Flask ni a la salida. No se cambian permisos MySQL.
+
+Para revisar independientemente la premisa, la cuenta administrativa debe
+ejecutar consultas de solo lectura en `recon_dev` y comprobar identidad,
+concesiones y los tres conteos antes de aceptar la exclusión:
+
+```sql
+SELECT DATABASE(), CURRENT_USER(), USER(), @@port;
+SHOW GRANTS FOR CURRENT_USER();
+SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA = 'recon_dev';
+SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = 'recon_dev';
+SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = 'recon_dev';
+```
+
+No usar el resultado de una cuenta con visibilidad parcial. Conservar para
+inspección el respaldo parcial del intento detenido; no restaurarlo ni borrarlo
+como parte de esta corrección.
+
+Tras la autorización posterior, la invocación prevista desde Git Bash y
+`backend/` es:
+
+```bash
+RECON_AUTORIZAR_MIGRACION_0004_RECON_DEV=1 bash scripts/aplicar_0004_recon_dev.sh
+```
+
+No se ejecuta durante esta corrección; la migración de `recon_dev` sigue pendiente
+de autorización y revisión independiente.
 
 ## Autenticación HTTP humana — decisión de implementación del prototipo
 

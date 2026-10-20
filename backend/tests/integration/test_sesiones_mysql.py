@@ -34,9 +34,9 @@ def _gestor(sesion: Session) -> GestionSesiones:
 
 
 def test_esquema_sesiones_y_revision(conexion_sesiones_mysql: Connection) -> None:
-    assert conexion_sesiones_mysql.scalar(text("SELECT version_num FROM alembic_version")) == (
-        "0003_sesiones_iam"
-    )
+    assert conexion_sesiones_mysql.scalar(text("SELECT version_num FROM alembic_version")) in {
+        "0003_sesiones_iam", "0004_auditoria_personas"
+    }
     inspector = inspect(conexion_sesiones_mysql)
     columnas = {col["name"]: col for col in inspector.get_columns("sesion_usuario")}
     assert set(columnas) == {
