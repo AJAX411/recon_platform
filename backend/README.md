@@ -11,10 +11,11 @@ aplicada y verificada manualmente en `recon_tests` y `recon_dev`; el responsable
 informó 10 pruebas de integración MySQL aprobadas y persistencia comprobada en
 desarrollo. Son resultados históricos, no una ejecución de este incremento.
 El registro administrativo es una parte de CU-03/HU-04; no completa esos casos de uso.
-El incremento actual prepara la API HTTP administrativa de Personas. Según la
-validación reportada por el responsable, `0004_auditoria_personas` y 26 pruebas
-de integración MySQL ya fueron verificadas en `recon_tests`; `recon_dev` sigue
-pendiente de migración.
+La API HTTP administrativa de Personas ya está implementada. Según la
+validación reportada por el responsable, `0004_auditoria_personas` fue aplicada
+a `recon_tests` y `recon_dev`. Las 26 pruebas de integración MySQL anteriores
+se ejecutaron de nuevo dentro de la suite de 35 pruebas del incremento 0005,
+según los resultados comunicados por el responsable.
 Los permisos SUPERADMIN/ADMINISTRADOR, los filtros y el contrato HTTP son
 decisiones PROVISIONALES de este encargo. La API no implementa enrolamiento
 facial; no completa CU-03.
@@ -30,6 +31,60 @@ público. `0003_sesiones_iam` fue aplicada y validada en
 
 Organización provisional: API/presentación → aplicación/casos de uso →
 dominio/reglas → infraestructura/persistencia. El dominio no importa el ORM.
+
+## Incremento 0005 — administración de puntos, dispositivos y auditoría general
+
+Las capacidades `accesos`, `integracion_edge` y `auditoria` implementan,
+respectivamente, `PuntoAcceso`, la administración web de `DispositivoEdge` y
+`EventoAuditoria` mínima. La administración Edge no comunica con Raspberry Pi.
+Las rutas bajo `/api/v1/puntos-acceso` y `/api/v1/dispositivos-edge` permiten
+crear, consultar, listar, editar los campos permitidos y cambiar estado; el
+dispositivo también permite cambiar `modo_operacion`. Código y asociación al
+punto son inmutables después de crear. La API no acepta cambios administrativos
+de `ultima_comunicacion`. `GET /api/v1/auditoria/eventos` ofrece consulta
+paginada y filtrada; no hay endpoints de escritura general de eventos.
+
+Los tres roles consultan puntos y dispositivos y cambian estado y modo.
+SUPERADMIN y ADMINISTRADOR crean y editan nombre/descripción permitidos y
+consultan la auditoría general. Una operación exitosa confirma la mutación y
+su evento en la misma transacción. Tras un rechazo administrativo relevante,
+se revierte la operación y se guarda un evento `FALLIDO` independiente; no se
+auditan en masa los rechazos de autenticación, CSRF o infraestructura. Las
+auditorías especializadas de IAM y Personas permanecen intactas. En cambios de
+modo se conserva el valor anterior y el nuevo sin almacenar payloads sensibles.
+
+[`migrations/versions/0005_puntos_edge_auditoria.py`](./migrations/versions/0005_puntos_edge_auditoria.py)
+fue aplicada y verificada en `recon_tests` y `recon_dev`, según los resultados
+comunicados por el responsable. Ambos procedimientos generaron respaldos
+privados fuera del repositorio. La revisión crea tres tablas InnoDB con PK
+`INT UNSIGNED`, FK, unicidades, CHECK, índices y fechas `DATETIME`
+convencionales UTC; no altera tablas previas.
+Los procedimientos utilizados se conservan para trazabilidad y requieren una
+nueva revisión antes de cualquier repetición:
+
+- [`scripts/verificar_recon_tests_0005.py`](./scripts/verificar_recon_tests_0005.py)
+  y [`scripts/verificar_recon_dev_0005.py`](./scripts/verificar_recon_dev_0005.py):
+  comprobaciones de solo lectura de identidad, revisión, estructura y datos.
+- [`scripts/verificar_objetos_recon_tests_0005.py`](./scripts/verificar_objetos_recon_tests_0005.py):
+  acredita con cuenta administrativa independiente la ausencia de rutinas,
+  eventos y triggers antes de excluirlos del respaldo de pruebas.
+- [`scripts/aplicar_0005_recon_tests.sh`](./scripts/aplicar_0005_recon_tests.sh)
+  y [`scripts/aplicar_0005_recon_dev.sh`](./scripts/aplicar_0005_recon_dev.sh):
+  se ejecutaron bajo control del responsable con preflight, respaldo privado,
+  confirmación literal y comprobación posterior, según su reporte.
+- [`scripts/probar_0005_recon_tests.sh`](./scripts/probar_0005_recon_tests.sh):
+  permitió ejecutar la suite MySQL contra `recon_tests` verificada en 0005;
+  el verificador posterior terminó satisfactoriamente sin residuos detectados,
+  según el responsable.
+
+Codex ejecutó la suite unitaria local con 195 pruebas aprobadas
+(`python -B -m pytest -p no:cacheprovider tests/unit -q`). El responsable
+informó 35 pruebas de integración MySQL aprobadas en `recon_tests`: las nueve
+del nuevo módulo y las 26 anteriores. La revisión independiente fue favorable.
+Codex no ejecutó las pruebas MySQL ni aplicó migraciones reales.
+No se han implementado `EventoAcceso`, observaciones biométricas, conectividad,
+alternancia funcional AUTOMATICO, frontend ni reasignación de dispositivos.
+El catálogo final de auditoría y su retención siguen PENDIENTES.
 
 ## Entorno
 
@@ -104,9 +159,9 @@ proporcionar las variables al proceso sin imprimir las contraseñas.
 Antes de cada conexión de prueba se exige `mysql+pymysql` hacia
 `127.0.0.1:3306`, base `recon_tests` y usuario `recon_test_app`. Se consulta
 también la identidad real de la conexión, una revisión conocida de Alembic
-(`0001_personas`, `0002_identity_iam`, `0003_sesiones_iam` o
-`0004_auditoria_personas`) y el motor InnoDB de las tablas
-correspondientes. Cualquier fallo detiene la
+(`0001_personas`, `0002_identity_iam`, `0003_sesiones_iam`,
+`0004_auditoria_personas` o `0005_puntos_edge_auditoria`) y el motor InnoDB
+de las tablas correspondientes. Cualquier fallo detiene la
 ejecución antes de las escrituras. Las pruebas no crean ni migran tablas y no
 usan `create_all`, `drop_all` ni borrados globales. Cada prueba de datos se
 ejecuta en una transacción externa que se revierte al terminar; los commits de
@@ -144,8 +199,8 @@ Remove-Item Env:RECON_RUN_MYSQL_INTEGRATION
 
 Las pruebas unitarias no sustituyen esta validación MySQL.
 
-Las pruebas nuevas de `tests/integration/test_personas_http_mysql.py` requieren
-la revisión exacta `0004_auditoria_personas`. El responsable informó que las
+Las pruebas de `tests/integration/test_personas_http_mysql.py` admiten
+`0004_auditoria_personas` o `0005_puntos_edge_auditoria`. El responsable informó que las
 ejecutó en `recon_tests` tras aplicar y revisar esa migración.
 El fixture verifica nombre de base, usuario, puerto, revisión y tablas InnoDB
 antes de permitir escrituras; cada prueba revierte su transacción externa.
@@ -181,7 +236,7 @@ las pruebas de integración MySQL. Las pruebas usan transacciones externas con
 savepoints y rollback, y el script repite la verificación de ausencia de
 residuos al finalizar. Los procedimientos históricos de `0003` se conservan.
 
-## Procedimiento 0004 de recon_dev — migración pendiente
+## Procedimiento histórico 0004 de recon_dev — ya aplicado según el responsable
 
 [`scripts/verificar_recon_dev_0004.py`](./scripts/verificar_recon_dev_0004.py)
 comprueba por lectura la identidad real `recon_dev`/`recon_dev_app`, revisión
@@ -195,11 +250,11 @@ no modifica MySQL ni muestra filas, contraseñas, hashes o tokens.
 Con `--antes --guardar-estado`, primero verifica la conexión, el esquema y los
 datos, y después crea el JSON privado con `O_EXCL`, sin sobrescribir un archivo
 existente. Los errores distinguen conexión MySQL, validación de esquema/datos y
-escritura del estado sin mostrar detalles de excepciones. El último intento se
-reportó detenido en esta invocación; su causa operativa aún no está confirmada.
+escritura del estado sin mostrar detalles de excepciones. Un intento histórico
+se reportó detenido aquí; posteriormente se confirmó la aplicación de 0004.
 
 [`scripts/aplicar_0004_recon_dev.sh`](./scripts/aplicar_0004_recon_dev.sh)
-queda preparado para una **autorización posterior**, tras revisión independiente.
+documenta el procedimiento histórico que requería autorización y revisión.
 Exige `RECON_AUTORIZAR_MIGRACION_0004_RECON_DEV=1`, contraseña oculta de
 `recon_dev_app`, verificación inicial, respaldo con `mysqldump` y marcadores de
 integridad, confirmación literal `APLICAR_0004_RECON_DEV` y segunda verificación
@@ -259,8 +314,9 @@ Tras la autorización posterior, la invocación prevista desde Git Bash y
 RECON_AUTORIZAR_MIGRACION_0004_RECON_DEV=1 bash scripts/aplicar_0004_recon_dev.sh
 ```
 
-No se ejecuta durante esta corrección; la migración de `recon_dev` sigue pendiente
-de autorización y revisión independiente.
+El texto de este apartado describe 0004, no una operación pendiente del
+incremento actual. Para 0005 se usan los verificadores y scripts indicados
+arriba, previa revisión y autorización independiente.
 
 ## Autenticación HTTP humana — decisión de implementación del prototipo
 

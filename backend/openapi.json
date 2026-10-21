@@ -3,7 +3,7 @@
   "info": {
     "title": "Recon Facial ? API administrativa",
     "version": "1.0.0-prototipo",
-    "description": "Contrato provisional de autenticaci?n IAM y administraci?n de Personas. Persona y UsuarioPlataforma son independientes. ACTIVO no implica enrolamiento ni acceso autorizado."
+    "description": "Contrato provisional de autenticación IAM, Personas y administración de PuntoAcceso, DispositivoEdge y EventoAuditoria. La API de DispositivoEdge es web administrativa; no define la frontera ni autenticación Edge."
   },
   "servers": [
     {
@@ -411,6 +411,396 @@
             }
           }
         }
+      },
+      "PuntoAccesoEntrada": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "descripcion": {
+            "type": "string",
+            "maxLength": 150,
+            "nullable": true
+          }
+        },
+        "required": [
+          "codigo",
+          "nombre"
+        ],
+        "additionalProperties": false,
+        "example": {
+          "codigo": "B1-PRINCIPAL",
+          "nombre": "Acceso principal — Bloque 1",
+          "descripcion": "Punto bidireccional"
+        }
+      },
+      "PuntoAccesoCambio": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "descripcion": {
+            "type": "string",
+            "maxLength": 150,
+            "nullable": true
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "minProperties": 1
+      },
+      "EstadoAdministrativo": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVO",
+              "INACTIVO"
+            ]
+          }
+        },
+        "required": [
+          "estado"
+        ],
+        "additionalProperties": false
+      },
+      "PuntoAcceso": {
+        "type": "object",
+        "properties": {
+          "id_punto_acceso": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "codigo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "descripcion": {
+            "type": "string",
+            "maxLength": 150,
+            "nullable": true
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVO",
+              "INACTIVO"
+            ]
+          },
+          "fecha_creacion": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fecha_actualizacion": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id_punto_acceso",
+          "codigo",
+          "nombre",
+          "descripcion",
+          "estado",
+          "fecha_creacion",
+          "fecha_actualizacion"
+        ],
+        "additionalProperties": false
+      },
+      "ListaPuntosAcceso": {
+        "type": "object",
+        "properties": {
+          "puntos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PuntoAcceso"
+            }
+          },
+          "limite": {
+            "type": "integer"
+          },
+          "desplazamiento": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "puntos",
+          "limite",
+          "desplazamiento"
+        ],
+        "additionalProperties": false
+      },
+      "DispositivoEdgeEntrada": {
+        "type": "object",
+        "properties": {
+          "id_punto_acceso": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "codigo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "modo_operacion": {
+            "type": "string",
+            "enum": [
+              "ENTRADA",
+              "SALIDA",
+              "AUTOMATICO"
+            ]
+          }
+        },
+        "required": [
+          "id_punto_acceso",
+          "codigo",
+          "nombre",
+          "modo_operacion"
+        ],
+        "additionalProperties": false,
+        "example": {
+          "id_punto_acceso": 1,
+          "codigo": "B1-EDGE-01",
+          "nombre": "Nodo principal",
+          "modo_operacion": "AUTOMATICO"
+        }
+      },
+      "DispositivoEdgeCambio": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "nombre"
+        ],
+        "additionalProperties": false
+      },
+      "ModoDispositivo": {
+        "type": "object",
+        "properties": {
+          "modo_operacion": {
+            "type": "string",
+            "enum": [
+              "ENTRADA",
+              "SALIDA",
+              "AUTOMATICO"
+            ]
+          }
+        },
+        "required": [
+          "modo_operacion"
+        ],
+        "additionalProperties": false
+      },
+      "DispositivoEdge": {
+        "type": "object",
+        "properties": {
+          "id_dispositivo": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "id_punto_acceso": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "codigo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "modo_operacion": {
+            "type": "string",
+            "enum": [
+              "ENTRADA",
+              "SALIDA",
+              "AUTOMATICO"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVO",
+              "INACTIVO"
+            ]
+          },
+          "ultima_comunicacion": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "fecha_creacion": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fecha_actualizacion": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id_dispositivo",
+          "id_punto_acceso",
+          "codigo",
+          "nombre",
+          "modo_operacion",
+          "estado",
+          "ultima_comunicacion",
+          "fecha_creacion",
+          "fecha_actualizacion"
+        ],
+        "additionalProperties": false
+      },
+      "ListaDispositivosEdge": {
+        "type": "object",
+        "properties": {
+          "dispositivos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispositivoEdge"
+            }
+          },
+          "limite": {
+            "type": "integer"
+          },
+          "desplazamiento": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dispositivos",
+          "limite",
+          "desplazamiento"
+        ],
+        "additionalProperties": false
+      },
+      "EventoAuditoria": {
+        "type": "object",
+        "properties": {
+          "id_auditoria": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "id_usuario_actor": {
+            "type": "integer",
+            "minimum": 1,
+            "nullable": true
+          },
+          "tipo_actor": {
+            "type": "string",
+            "enum": [
+              "USUARIO",
+              "SISTEMA"
+            ]
+          },
+          "accion": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "recurso_tipo": {
+            "type": "string",
+            "maxLength": 50,
+            "nullable": true
+          },
+          "id_recurso_afectado": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": true
+          },
+          "resultado": {
+            "type": "string",
+            "enum": [
+              "EXITOSO",
+              "FALLIDO"
+            ]
+          },
+          "detalle": {
+            "type": "string",
+            "nullable": true
+          },
+          "fecha_hora": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id_auditoria",
+          "id_usuario_actor",
+          "tipo_actor",
+          "accion",
+          "recurso_tipo",
+          "id_recurso_afectado",
+          "resultado",
+          "detalle",
+          "fecha_hora"
+        ],
+        "additionalProperties": false,
+        "description": "Detalle minimizado; en CAMBIAR_MODO_DISPOSITIVO contiene anterior y nuevo.",
+        "example": {
+          "id_auditoria": 3,
+          "id_usuario_actor": 1,
+          "tipo_actor": "USUARIO",
+          "accion": "CAMBIAR_MODO_DISPOSITIVO",
+          "recurso_tipo": "DISPOSITIVO_EDGE",
+          "id_recurso_afectado": "1",
+          "resultado": "EXITOSO",
+          "detalle": "{\"anterior\":\"AUTOMATICO\",\"nuevo\":\"ENTRADA\"}",
+          "fecha_hora": "2026-10-20T12:00:00+00:00"
+        }
+      },
+      "ListaEventosAuditoria": {
+        "type": "object",
+        "properties": {
+          "eventos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventoAuditoria"
+            }
+          },
+          "limite": {
+            "type": "integer"
+          },
+          "desplazamiento": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "eventos",
+          "limite",
+          "desplazamiento"
+        ],
+        "additionalProperties": false
       }
     }
   },
@@ -1605,6 +1995,1262 @@
             }
           }
         }
+      }
+    },
+    "/puntos-acceso": {
+      "get": {
+        "summary": "Listar puntos de acceso",
+        "description": "Roles: SUPERADMIN, ADMINISTRADOR, OPERADOR. Sesión humana vigente; escrituras con CSRF. Cache-Control: no-store.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaPuntosAcceso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos, filtros o paginación inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio o auditoría no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "desplazamiento",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            }
+          },
+          {
+            "name": "codigo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVO",
+                "INACTIVO"
+              ]
+            }
+          }
+        ]
+      },
+      "post": {
+        "summary": "Crear punto de acceso",
+        "description": "Roles: SUPERADMIN, ADMINISTRADOR. Sesión humana vigente; escrituras con CSRF. Cache-Control: no-store.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PuntoAcceso"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos, filtros o paginación inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio o auditoría no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Código duplicado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PuntoAccesoEntrada"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/puntos-acceso/{id}": {
+      "get": {
+        "summary": "Consultar punto de acceso",
+        "description": "Roles: SUPERADMIN, ADMINISTRADOR, OPERADOR. Sesión humana vigente; escrituras con CSRF. Cache-Control: no-store.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PuntoAcceso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos, filtros o paginación inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio o auditoría no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "patch": {
+        "summary": "Editar nombre o descripción de punto",
+        "description": "Roles: SUPERADMIN, ADMINISTRADOR. Sesión humana vigente; escrituras con CSRF. Cache-Control: no-store.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PuntoAcceso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos, filtros o paginación inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio o auditoría no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PuntoAccesoCambio"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/puntos-acceso/{id}/estado": {
+      "patch": {
+        "summary": "Activar o desactivar punto",
+        "description": "Roles: SUPERADMIN, ADMINISTRADOR, OPERADOR. Sesión humana vigente; escrituras con CSRF. Cache-Control: no-store.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PuntoAcceso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos, filtros o paginación inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio o auditoría no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstadoAdministrativo"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dispositivos-edge": {
+      "get": {
+        "summary": "Listar dispositivos Edge administrativos",
+        "description": "Roles: SUPERADMIN, ADMINISTRADOR, OPERADOR. Sesión humana vigente; escrituras con CSRF. Cache-Control: no-store.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaDispositivosEdge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos, filtros o paginación inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio o auditoría no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "desplazamiento",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            }
+          },
+          {
+            "name": "codigo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVO",
+                "INACTIVO"
+              ]
+            }
+          },
+          {
+            "name": "modo_operacion",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ENTRADA",
+                "SALIDA",
+                "AUTOMATICO"
+              ]
+            }
+          },
+          {
+            "name": "id_punto_acceso",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "post": {
+        "summary": "Crear dispositivo Edge",
+        "description": "Roles: SUPERADMIN, ADMINISTRADOR. Sesión humana vigente; escrituras con CSRF. Cache-Control: no-store.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispositivoEdge"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos, filtros o paginación inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio o auditoría no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Código duplicado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispositivoEdgeEntrada"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dispositivos-edge/{id}": {
+      "get": {
+        "summary": "Consultar dispositivo Edge",
+        "description": "Roles: SUPERADMIN, ADMINISTRADOR, OPERADOR. Sesión humana vigente; escrituras con CSRF. Cache-Control: no-store.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispositivoEdge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos, filtros o paginación inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio o auditoría no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "patch": {
+        "summary": "Editar nombre de dispositivo Edge",
+        "description": "Roles: SUPERADMIN, ADMINISTRADOR. Sesión humana vigente; escrituras con CSRF. Cache-Control: no-store.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispositivoEdge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos, filtros o paginación inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio o auditoría no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispositivoEdgeCambio"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dispositivos-edge/{id}/estado": {
+      "patch": {
+        "summary": "Activar o desactivar dispositivo Edge",
+        "description": "Roles: SUPERADMIN, ADMINISTRADOR, OPERADOR. Sesión humana vigente; escrituras con CSRF. Cache-Control: no-store.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispositivoEdge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos, filtros o paginación inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio o auditoría no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstadoAdministrativo"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dispositivos-edge/{id}/modo": {
+      "patch": {
+        "summary": "Cambiar modo de dispositivo Edge",
+        "description": "Roles: SUPERADMIN, ADMINISTRADOR, OPERADOR. Sesión humana vigente; escrituras con CSRF. Cache-Control: no-store.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispositivoEdge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos, filtros o paginación inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio o auditoría no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModoDispositivo"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auditoria/eventos": {
+      "get": {
+        "summary": "Consultar auditoría general",
+        "description": "Roles: SUPERADMIN, ADMINISTRADOR. Sesión humana vigente; escrituras con CSRF. Cache-Control: no-store.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaEventosAuditoria"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos, filtros o paginación inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio o auditoría no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "desplazamiento",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000,
+              "default": 0
+            }
+          },
+          {
+            "name": "accion",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 50
+            }
+          },
+          {
+            "name": "resultado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "EXITOSO",
+                "FALLIDO"
+              ]
+            }
+          },
+          {
+            "name": "recurso_tipo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 50
+            }
+          },
+          {
+            "name": "id_usuario_actor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Fecha y hora ISO 8601 con zona horaria; se interpreta en UTC."
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Fecha y hora ISO 8601 con zona horaria; se interpreta en UTC."
+          }
+        ]
       }
     }
   }

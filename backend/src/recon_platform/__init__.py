@@ -35,6 +35,9 @@ def create_app(*, pruebas: bool = False) -> Flask:
         # Registrar metadatos antes de asociar Flask-Migrate.
         from recon_platform.identidad.infraestructura import modelos as modelos_iam  # noqa: F401
         from recon_platform.personas.infraestructura import modelos  # noqa: F401
+        from recon_platform.accesos import infraestructura as modelos_puntos  # noqa: F401
+        from recon_platform.integracion_edge import infraestructura as modelos_dispositivos  # noqa: F401
+        from recon_platform.auditoria import infraestructura as modelos_auditoria  # noqa: F401
 
         migrate.init_app(app, db)
 
@@ -51,6 +54,14 @@ def create_app(*, pruebas: bool = False) -> Flask:
     from recon_platform.personas.api import bp as bp_personas
 
     app.register_blueprint(bp_personas)
+
+    from recon_platform.accesos.api import bp as bp_puntos
+    from recon_platform.integracion_edge.api import bp as bp_dispositivos
+    from recon_platform.auditoria.api import bp as bp_auditoria
+
+    app.register_blueprint(bp_puntos)
+    app.register_blueprint(bp_dispositivos)
+    app.register_blueprint(bp_auditoria)
 
     from recon_platform.identidad.infraestructura.cli import registrar_comandos
 

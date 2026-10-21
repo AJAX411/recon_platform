@@ -22,8 +22,9 @@ pytestmark = pytest.mark.mysql_integration
 
 @pytest.fixture
 def conexion_0004(conexion_mysql: Connection):
-    if conexion_mysql.scalar(text("SELECT version_num FROM alembic_version")) != "0004_auditoria_personas":
-        pytest.exit("Las pruebas de Personas HTTP requieren 0004_auditoria_personas.", returncode=2)
+    if conexion_mysql.scalar(text("SELECT version_num FROM alembic_version")) not in {
+        "0004_auditoria_personas", "0005_puntos_edge_auditoria"}:
+        pytest.exit("Las pruebas de Personas HTTP requieren 0004 o 0005.", returncode=2)
     conexion_mysql.rollback()
     return conexion_mysql
 

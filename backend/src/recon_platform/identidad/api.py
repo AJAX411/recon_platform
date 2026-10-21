@@ -195,7 +195,7 @@ def identidad_http_actual() -> IdentidadAutenticada | None:
         raise ServicioIAMNoDisponible from None
 
 
-def requerir_roles(*roles: str) -> Callable:
+def requerir_roles(*roles: str, al_denegar: Callable | None = None) -> Callable:
     """Guard de presentación; los casos de uso siguen validando al actor."""
     def decorar(vista: Callable) -> Callable:
         @wraps(vista)
@@ -217,6 +217,12 @@ def requerir_roles(*roles: str) -> Callable:
             if identidad is None:
                 return _error(401, "No hay una sesión activa.")
             if identidad.rol_nombre not in roles:
+                if al_denegar is not None:
+                    try:
+                        al_denegar(identidad, *args, **kwargs)
+                    except Exception:
+                        _revertir_sin_detalles()
+                        return _error(503, "No se pudo registrar la denegación administrativa.")
                 return _error(403, "Permiso denegado.")
             g.identidad_iam = identidad
             return vista(*args, **kwargs)

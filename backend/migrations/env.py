@@ -5,6 +5,9 @@ from flask import current_app
 
 from recon_platform.identidad.infraestructura import modelos as modelos_iam  # noqa: F401
 from recon_platform.personas.infraestructura import modelos  # noqa: F401
+from recon_platform.accesos import infraestructura as modelos_puntos  # noqa: F401
+from recon_platform.integracion_edge import infraestructura as modelos_dispositivos  # noqa: F401
+from recon_platform.auditoria import infraestructura as modelos_auditoria  # noqa: F401
 
 config = context.config
 db = current_app.extensions["migrate"].db
