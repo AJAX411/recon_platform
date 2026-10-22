@@ -74,7 +74,7 @@ def test_esquema_de_alembic_tiene_columnas_fk_y_unicidades(
 ) -> None:
     assert conexion_mysql.scalar(text("SELECT version_num FROM alembic_version")) in {
         "0001_personas", "0002_identity_iam", "0003_sesiones_iam", "0004_auditoria_personas",
-        "0005_puntos_edge_auditoria"
+        "0005_puntos_edge_auditoria", "0006_evento_acceso"
     }
     inspector = inspect(conexion_mysql)
     assert {"alembic_version", "tipo_persona", "persona"}.issubset(

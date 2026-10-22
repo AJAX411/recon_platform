@@ -38,6 +38,7 @@ def create_app(*, pruebas: bool = False) -> Flask:
         from recon_platform.accesos import infraestructura as modelos_puntos  # noqa: F401
         from recon_platform.integracion_edge import infraestructura as modelos_dispositivos  # noqa: F401
         from recon_platform.auditoria import infraestructura as modelos_auditoria  # noqa: F401
+        from recon_platform.accesos import eventos_infraestructura as modelos_eventos  # noqa: F401
 
         migrate.init_app(app, db)
 
@@ -62,6 +63,10 @@ def create_app(*, pruebas: bool = False) -> Flask:
     app.register_blueprint(bp_puntos)
     app.register_blueprint(bp_dispositivos)
     app.register_blueprint(bp_auditoria)
+
+    from recon_platform.accesos.eventos_api import bp as bp_eventos_acceso
+
+    app.register_blueprint(bp_eventos_acceso)
 
     from recon_platform.identidad.infraestructura.cli import registrar_comandos
 

@@ -62,18 +62,18 @@ def ejecutar(operacion: Callable, *, accion: str | None = None,
             detalle_fallo: Callable[[str], str] | None = None):
     try:
         return operacion()
-    except (PuntoNoExiste, DispositivoNoExiste) as exc:
+    except (PuntoNoExiste, DispositivoNoExiste):
         codigo, motivo = 404, "RECURSO_NO_EXISTE"
-    except PuntoAsociadoNoExiste as exc:
+    except PuntoAsociadoNoExiste:
         codigo, motivo = 400, "PUNTO_ASOCIADO_NO_EXISTE"
-    except (PuntoDuplicado, DispositivoDuplicado) as exc:
+    except (PuntoDuplicado, DispositivoDuplicado):
         codigo, motivo = 409, "CODIGO_DUPLICADO"
     except (IntegridadPunto, IntegridadDispositivo):
         db.session.rollback()
         return error(503, "La administración no está disponible.")
-    except (PermissionError, PermisoPuntoDenegado, PermisoDispositivoDenegado) as exc:
+    except (PermissionError, PermisoPuntoDenegado, PermisoDispositivoDenegado):
         codigo, motivo = 403, "PERMISO_DENEGADO"
-    except ValueError as exc:
+    except ValueError:
         codigo, motivo = 400, "DATOS_INVALIDOS"
     except Exception:
         db.session.rollback()

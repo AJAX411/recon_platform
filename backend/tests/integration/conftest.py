@@ -45,7 +45,8 @@ def _validar_conexion(conexion: Connection) -> None:
                     "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN "
                     "('alembic_version', 'tipo_persona', 'persona', "
                     "'rol', 'usuario_plataforma', 'auditoria_iam', 'sesion_usuario', "
-                    "'auditoria_personas', 'punto_acceso', 'dispositivo_edge', 'evento_auditoria')"
+                    "'auditoria_personas', 'punto_acceso', 'dispositivo_edge', "
+                    "'evento_auditoria', 'evento_acceso')"
                 )
             ).all()
         )
@@ -66,7 +67,7 @@ def _validar_conexion(conexion: Connection) -> None:
         _detener("La conexión real no corresponde a MySQL de pruebas autorizado.")
     if versiones not in (["0001_personas"], ["0002_identity_iam"],
                          ["0003_sesiones_iam"], ["0004_auditoria_personas"],
-                         ["0005_puntos_edge_auditoria"]):
+                         ["0005_puntos_edge_auditoria"], ["0006_evento_acceso"]):
         _detener("La base de pruebas no tiene una revisión Alembic conocida.")
     esperados = {
         "alembic_version": "InnoDB",
@@ -74,20 +75,24 @@ def _validar_conexion(conexion: Connection) -> None:
         "persona": "InnoDB",
     }
     if versiones in (["0002_identity_iam"], ["0003_sesiones_iam"],
-                    ["0004_auditoria_personas"], ["0005_puntos_edge_auditoria"]):
+                    ["0004_auditoria_personas"], ["0005_puntos_edge_auditoria"],
+                    ["0006_evento_acceso"]):
         esperados.update({
             "rol": "InnoDB",
             "usuario_plataforma": "InnoDB",
             "auditoria_iam": "InnoDB",
         })
     if versiones in (["0003_sesiones_iam"], ["0004_auditoria_personas"],
-                    ["0005_puntos_edge_auditoria"]):
+                    ["0005_puntos_edge_auditoria"], ["0006_evento_acceso"]):
         esperados["sesion_usuario"] = "InnoDB"
-    if versiones in (["0004_auditoria_personas"], ["0005_puntos_edge_auditoria"]):
+    if versiones in (["0004_auditoria_personas"], ["0005_puntos_edge_auditoria"],
+                    ["0006_evento_acceso"]):
         esperados["auditoria_personas"] = "InnoDB"
-    if versiones == ["0005_puntos_edge_auditoria"]:
+    if versiones in (["0005_puntos_edge_auditoria"], ["0006_evento_acceso"]):
         esperados.update({"punto_acceso": "InnoDB", "dispositivo_edge": "InnoDB",
                          "evento_auditoria": "InnoDB"})
+    if versiones == ["0006_evento_acceso"]:
+        esperados["evento_acceso"] = "InnoDB"
     if motores != esperados:
         _detener("El esquema de pruebas requiere tablas InnoDB para el rollback.")
 
@@ -135,7 +140,7 @@ def conexion_iam_mysql(conexion_mysql: Connection) -> Iterator[Connection]:
     except Exception:
         pass
     if revision not in {"0002_identity_iam", "0003_sesiones_iam", "0004_auditoria_personas",
-                        "0005_puntos_edge_auditoria"}:
+                        "0005_puntos_edge_auditoria", "0006_evento_acceso"}:
         _detener("Las pruebas IAM requieren una revisión IAM conocida.")
     conexion_mysql.rollback()
     yield conexion_mysql
@@ -176,7 +181,7 @@ def conexion_sesiones_mysql(conexion_iam_mysql: Connection) -> Iterator[Connecti
     """Exige 0003 antes de permitir escrituras de pruebas de sesiones."""
     revision = conexion_iam_mysql.scalar(text("SELECT version_num FROM alembic_version"))
     if revision not in {"0003_sesiones_iam", "0004_auditoria_personas",
-                        "0005_puntos_edge_auditoria"}:
+                        "0005_puntos_edge_auditoria", "0006_evento_acceso"}:
         _detener("Las pruebas de sesiones requieren 0003 o una revisión posterior conocida.")
     conexion_iam_mysql.rollback()
     yield conexion_iam_mysql

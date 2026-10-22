@@ -11,7 +11,8 @@ from sqlalchemy.pool import NullPool
 
 from recon_platform.config import obtener_uri_mysql
 from verificar_recon_tests_0003 import (
-    VerificacionFallida, _esquema_nuevo as verificar_0003,
+    VerificacionFallida as VerificacionFallida,  # Reexportada para las pruebas del verificador.
+    _esquema_nuevo as verificar_0003,
     _esquema_previo as verificar_0002, _identidad, _exigir,
 )
 from verificar_recon_tests_0004 import TABLAS_0004, validar_0004, validar_destino

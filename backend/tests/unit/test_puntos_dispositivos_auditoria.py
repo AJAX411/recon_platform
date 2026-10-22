@@ -9,7 +9,6 @@ from recon_platform.accesos.aplicacion import AdministrarPuntos, PermisoPuntoDen
 from recon_platform.accesos.dominio import PuntoAcceso
 from recon_platform.accesos.infraestructura import PuntoAccesoModelo, RepositorioPuntosSQLAlchemy
 from recon_platform.auditoria.infraestructura import EventoAuditoriaModelo, RepositorioEventosSQLAlchemy, UnidadTrabajoSQLAlchemy
-from recon_platform.composicion_administrativa import dispositivos
 from recon_platform.extensions import db
 from recon_platform.identidad.aplicacion.casos_de_uso import CrearUsuarioPlataforma
 from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
@@ -24,8 +23,9 @@ DISPOSITIVOS = "/api/v1/dispositivos-edge"
 AUDITORIA = "/api/v1/auditoria/eventos"
 
 
+# La fixture importada se inyecta por nombre; Ruff ve el parámetro como redefinición.
 @pytest.fixture
-def entorno_incremento(entorno):
+def entorno_incremento(entorno):  # noqa: F811
     app, cliente, _, superadmin_id, operador_id = entorno
     with app.app_context():
         PuntoAccesoModelo.__table__.create(db.engine)

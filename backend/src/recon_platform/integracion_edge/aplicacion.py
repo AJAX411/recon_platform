@@ -8,11 +8,24 @@ from recon_platform.auditoria.dominio import EventoAuditoria
 from recon_platform.integracion_edge.dominio import DispositivoEdge, ESTADOS, MODOS
 
 
-class DispositivoNoExiste(ValueError): pass
-class DispositivoDuplicado(ValueError): pass
-class PuntoAsociadoNoExiste(ValueError): pass
-class IntegridadDispositivo(ValueError): pass
-class PermisoDispositivoDenegado(ValueError): pass
+class DispositivoNoExiste(ValueError):
+    pass
+
+
+class DispositivoDuplicado(ValueError):
+    pass
+
+
+class PuntoAsociadoNoExiste(ValueError):
+    pass
+
+
+class IntegridadDispositivo(ValueError):
+    pass
+
+
+class PermisoDispositivoDenegado(ValueError):
+    pass
 
 
 class RepositorioDispositivos(Protocol):

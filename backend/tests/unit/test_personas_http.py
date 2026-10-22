@@ -19,8 +19,9 @@ from test_autenticacion_http import CLAVE, _login, entorno  # noqa: F401
 BASE = "/api/v1/personas"
 
 
+# La fixture importada se inyecta por nombre; Ruff ve el parámetro como redefinición.
 @pytest.fixture
-def personas_entorno(entorno):
+def personas_entorno(entorno):  # noqa: F811
     app, cliente, _, superadmin_id, operador_id = entorno
     with app.app_context():
         TipoPersonaModelo.__table__.create(db.engine)

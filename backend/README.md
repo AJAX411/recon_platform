@@ -82,7 +82,7 @@ Codex ejecutó la suite unitaria local con 195 pruebas aprobadas
 informó 35 pruebas de integración MySQL aprobadas en `recon_tests`: las nueve
 del nuevo módulo y las 26 anteriores. La revisión independiente fue favorable.
 Codex no ejecutó las pruebas MySQL ni aplicó migraciones reales.
-No se han implementado `EventoAcceso`, observaciones biométricas, conectividad,
+En el cierre de 0005 no se habían implementado `EventoAcceso`, observaciones biométricas, conectividad,
 alternancia funcional AUTOMATICO, frontend ni reasignación de dispositivos.
 El catálogo final de auditoría y su retención siguen PENDIENTES.
 
@@ -533,3 +533,68 @@ uso y la persistencia MySQL real, sin abrir un puerto HTTP público. No prueba
 el comportamiento de un navegador real, la entrega de cookies `Secure` por
 HTTPS, la terminación TLS, una configuración de proxy ni el frontend React;
 eso requiere una validación posterior en un entorno HTTP/HTTPS controlado.
+
+## Incremento 0006 — EventoAcceso manual (implementación preparada)
+
+El código de 0006 incorpora `EventoAcceso` en Accesos, con registro humano
+`ENTRADA`/`SALIDA`, jornada civil `America/Bogota`, incidencia nullable y
+auditoría en una misma transacción. La secuencia toma únicamente el último
+`AUTORIZADO` de la Persona en la jornada; `RECHAZADO` no la modifica. El modelo
+reserva `FACIAL` y una FK nullable hacia `DispositivoEdge`, pero la API nueva
+solo produce eventos `MANUAL`, con `id_dispositivo=NULL`. No se implementaron
+observaciones biométricas, un adaptador HTTP Edge ni acciones físicas.
+
+La migración candidata está en
+[`migrations/versions/0006_evento_acceso.py`](./migrations/versions/0006_evento_acceso.py).
+**No está aplicada** por esta entrega. Crea solamente `evento_acceso` y exige
+InnoDB, FK restrictivas, valores CHECK, `UNIQUE` de clave idempotente e índices
+para jornada y consultas. La hora se guarda en UTC `DATETIME(6)`; `tzdata` es
+dependencia explícita para obtener la zona IANA también en Windows.
+
+### API web humana
+
+El contrato versionado se encuentra en [`openapi.json`](./openapi.json). Todas
+las rutas nuevas usan sesión humana, autorización backend y `Cache-Control:
+no-store`; `POST` exige además `X-CSRF-Token` e `Idempotency-Key` UUIDv4
+canónico:
+
+| Ruta | Función |
+|---|---|
+| `GET /api/v1/eventos-acceso/personas-elegibles` | Búsqueda acotada de Persona activa por documento, identificador institucional o prefijo de nombre; devuelve PK, nombre y final del documento. No concede permisos administrativos de Personas. |
+| `POST /api/v1/eventos-acceso/manual` | Registra una declaración nueva (`201`) o devuelve el mismo evento para un reintento idéntico (`200`, `Idempotent-Replay: true`). Clave reutilizada para otro actor o contenido: `409`. |
+| `GET /api/v1/eventos-acceso/historial` | OPERADOR: filas solo de hoy Bogotá con movimiento, resultado y hora redondeada a la hora; sin PK, Punto, Persona, actor ni incidencia por fila. Administradores: histórico ampliado con filtros y paginación. |
+| `GET /api/v1/eventos-acceso/alertas` | OPERADOR: conteos por tipo de incidencia de hoy, sin identificadores ni hora. Administradores: incidencias ampliadas paginadas. |
+| `GET /api/v1/eventos-acceso/incidencias/{id_evento}` | Detalle personal solo para ADMINISTRADOR/SUPERADMIN. |
+
+Para OPERADOR, los filtros de identidad, fechas y Punto se rechazan; ninguna
+ruta de detalle personal le permite recuperar un ID. La hora aproximada de su
+historial conserva utilidad operacional, pero puede existir correlación por
+observación externa cuando el volumen es bajo: esta proyección no promete
+anonimato absoluto. La política general de retención y privacidad sigue
+PENDIENTE. Las alertas de 0006 son datos consultables, sin push ni frontend.
+
+El caso de uso descarta la transacción de lectura que pudo abrir el guard IAM,
+bloquea la fila de Persona y abre después la primera lectura consistente de
+eventos. Todos los escritores futuros para esa Persona deben respetar el
+mismo bloqueo; la prueba MySQL preparada fuerza una snapshot previa para
+comprobar que el caso de uso la descarta. La
+restricción `UNIQUE` evita dobles inserciones de la misma clave. Un reintento
+del mismo actor y declaración devuelve el resultado original aunque Persona o
+Punto estén ahora inactivos; una declaración nueva exige estados activos.
+Evento y auditoría de éxito se confirman juntos o se revierten juntos.
+
+### Validación controlada pendiente
+
+[`scripts/verificar_recon_0006.py`](./scripts/verificar_recon_0006.py) verifica
+identidad, revisión, objetos, restricciones y huellas de datos previos. Los
+scripts [`aplicar_0006_recon_tests.sh`](./scripts/aplicar_0006_recon_tests.sh)
+y [`aplicar_0006_recon_dev.sh`](./scripts/aplicar_0006_recon_dev.sh) están
+preparados para revisión independiente: exigen autorización explícita,
+preflight, comprobación administrativa de objetos, respaldo privado completo,
+confirmación literal y postflight. El script
+[`probar_0006_recon_tests.sh`](./scripts/probar_0006_recon_tests.sh) queda
+reservado para pruebas MySQL reales autorizadas. Las pruebas de concurrencia
+usan dos conexiones independientes y limpian solo filas ficticias creadas
+por su fixture. No se debe ejecutar ninguno de estos procedimientos antes de
+revisar el código y autorizar la operación correspondiente; primero
+`recon_tests`, después `recon_dev`, sin reintentos ni restauraciones automáticas.

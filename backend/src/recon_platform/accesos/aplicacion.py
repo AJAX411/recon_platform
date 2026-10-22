@@ -6,10 +6,20 @@ from recon_platform.accesos.dominio import PuntoAcceso, texto
 from recon_platform.auditoria.dominio import EventoAuditoria
 
 
-class PuntoNoExiste(ValueError): pass
-class PuntoDuplicado(ValueError): pass
-class IntegridadPunto(ValueError): pass
-class PermisoPuntoDenegado(ValueError): pass
+class PuntoNoExiste(ValueError):
+    pass
+
+
+class PuntoDuplicado(ValueError):
+    pass
+
+
+class IntegridadPunto(ValueError):
+    pass
+
+
+class PermisoPuntoDenegado(ValueError):
+    pass
 
 
 class RepositorioPuntos(Protocol):

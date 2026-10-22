@@ -71,7 +71,7 @@ def test_esquema_iam_y_revision_sin_fk_a_persona(
 ) -> None:
     assert conexion_iam_mysql.scalar(text("SELECT version_num FROM alembic_version")) in {
         "0002_identity_iam", "0003_sesiones_iam", "0004_auditoria_personas",
-        "0005_puntos_edge_auditoria"
+        "0005_puntos_edge_auditoria", "0006_evento_acceso"
     }
     inspector = inspect(conexion_iam_mysql)
     assert {"rol", "usuario_plataforma", "auditoria_iam", "persona"}.issubset(

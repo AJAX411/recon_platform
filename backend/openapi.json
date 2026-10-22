@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Recon Facial ? API administrativa",
-    "version": "1.0.0-prototipo",
-    "description": "Contrato provisional de autenticación IAM, Personas y administración de PuntoAcceso, DispositivoEdge y EventoAuditoria. La API de DispositivoEdge es web administrativa; no define la frontera ni autenticación Edge."
+    "version": "1.1.0-prototipo",
+    "description": "Contrato provisional de autenticación IAM, Personas y administración de PuntoAcceso, DispositivoEdge y EventoAuditoria. La API de DispositivoEdge es web administrativa; no define la frontera ni autenticación Edge. Incremento 0006: EventoAcceso manual, historial y alertas por rol; ninguna API Edge operativa."
   },
   "servers": [
     {
@@ -801,6 +801,372 @@
           "desplazamiento"
         ],
         "additionalProperties": false
+      },
+      "PersonaElegible0006": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id_persona",
+          "nombre",
+          "tipo_documento",
+          "documento_final"
+        ],
+        "properties": {
+          "id_persona": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "tipo_documento": {
+            "type": "string"
+          },
+          "documento_final": {
+            "type": "string",
+            "description": "Solo los últimos cuatro caracteres del documento."
+          }
+        }
+      },
+      "EventoManualEntrada0006": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id_persona",
+          "id_punto_acceso",
+          "tipo_movimiento"
+        ],
+        "properties": {
+          "id_persona": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "id_punto_acceso": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "tipo_movimiento": {
+            "type": "string",
+            "enum": [
+              "ENTRADA",
+              "SALIDA"
+            ]
+          }
+        }
+      },
+      "EventoManualRespuesta0006": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id_evento_acceso",
+          "id_persona",
+          "id_punto_acceso",
+          "tipo_movimiento",
+          "resultado",
+          "metodo_registro",
+          "id_usuario_registrador",
+          "fecha_hora_ocurrencia",
+          "tipo_incidencia_secuencia",
+          "id_dispositivo"
+        ],
+        "properties": {
+          "id_evento_acceso": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "id_persona": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "id_punto_acceso": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "tipo_movimiento": {
+            "type": "string",
+            "enum": [
+              "ENTRADA",
+              "SALIDA"
+            ]
+          },
+          "resultado": {
+            "type": "string",
+            "enum": [
+              "AUTORIZADO"
+            ]
+          },
+          "metodo_registro": {
+            "type": "string",
+            "enum": [
+              "MANUAL"
+            ]
+          },
+          "id_usuario_registrador": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "fecha_hora_ocurrencia": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Instante UTC confiable de Plataforma."
+          },
+          "tipo_incidencia_secuencia": {
+            "type": "string",
+            "enum": [
+              "ENTRADA_REPETIDA",
+              "SALIDA_REPETIDA",
+              "SALIDA_SIN_ENTRADA_DEL_DIA"
+            ],
+            "nullable": true
+          },
+          "id_dispositivo": {
+            "type": "integer",
+            "minimum": 1,
+            "nullable": true
+          }
+        }
+      },
+      "HistorialOperadorItem0006": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tipo_movimiento",
+          "resultado",
+          "hora_local_aproximada"
+        ],
+        "properties": {
+          "tipo_movimiento": {
+            "type": "string",
+            "enum": [
+              "ENTRADA",
+              "SALIDA"
+            ]
+          },
+          "resultado": {
+            "type": "string",
+            "enum": [
+              "AUTORIZADO",
+              "RECHAZADO"
+            ]
+          },
+          "hora_local_aproximada": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Hora local Bogotá redondeada al inicio de la hora; sin ID, Punto, Persona ni actor."
+          }
+        }
+      },
+      "HistorialAdminItem0006": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id_evento_acceso",
+          "id_persona",
+          "nombre_persona",
+          "tipo_documento",
+          "numero_documento",
+          "id_punto_acceso",
+          "punto",
+          "id_usuario_registrador",
+          "usuario_registrador",
+          "tipo_movimiento",
+          "resultado",
+          "metodo_registro",
+          "fecha_hora_ocurrencia",
+          "tipo_incidencia_secuencia",
+          "id_dispositivo"
+        ],
+        "properties": {
+          "id_evento_acceso": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "id_persona": {
+            "type": "integer",
+            "minimum": 1,
+            "nullable": true
+          },
+          "nombre_persona": {
+            "type": "string",
+            "nullable": true
+          },
+          "tipo_documento": {
+            "type": "string",
+            "nullable": true
+          },
+          "numero_documento": {
+            "type": "string",
+            "nullable": true
+          },
+          "id_punto_acceso": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "punto": {
+            "type": "string"
+          },
+          "id_usuario_registrador": {
+            "type": "integer",
+            "minimum": 1,
+            "nullable": true
+          },
+          "usuario_registrador": {
+            "type": "string",
+            "nullable": true
+          },
+          "tipo_movimiento": {
+            "type": "string",
+            "enum": [
+              "ENTRADA",
+              "SALIDA"
+            ]
+          },
+          "resultado": {
+            "type": "string",
+            "enum": [
+              "AUTORIZADO",
+              "RECHAZADO"
+            ]
+          },
+          "metodo_registro": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "FACIAL"
+            ]
+          },
+          "fecha_hora_ocurrencia": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tipo_incidencia_secuencia": {
+            "type": "string",
+            "enum": [
+              "ENTRADA_REPETIDA",
+              "SALIDA_REPETIDA",
+              "SALIDA_SIN_ENTRADA_DEL_DIA"
+            ],
+            "nullable": true
+          },
+          "id_dispositivo": {
+            "type": "integer",
+            "minimum": 1,
+            "nullable": true
+          }
+        }
+      },
+      "HistorialOperador0006": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventos",
+          "limite",
+          "desplazamiento",
+          "alcance"
+        ],
+        "properties": {
+          "eventos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistorialOperadorItem0006"
+            }
+          },
+          "limite": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "desplazamiento": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "alcance": {
+            "type": "string",
+            "enum": [
+              "JORNADA_ACTUAL_REDUCIDA"
+            ]
+          }
+        }
+      },
+      "HistorialAdmin0006": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventos",
+          "limite",
+          "desplazamiento",
+          "alcance"
+        ],
+        "properties": {
+          "eventos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistorialAdminItem0006"
+            }
+          },
+          "limite": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "desplazamiento": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "alcance": {
+            "type": "string",
+            "enum": [
+              "HISTORICO_AMPLIADO"
+            ]
+          }
+        }
+      },
+      "AlertasOperador0006": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "conteos_por_incidencia",
+          "zona_horaria"
+        ],
+        "properties": {
+          "conteos_por_incidencia": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Solo conteos agregados de la jornada actual."
+          },
+          "zona_horaria": {
+            "type": "string",
+            "enum": [
+              "America/Bogota"
+            ]
+          }
+        }
+      },
+      "AlertasAdmin0006": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "alertas",
+          "limite",
+          "desplazamiento"
+        ],
+        "properties": {
+          "alertas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistorialAdminItem0006"
+            }
+          },
+          "limite": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "desplazamiento": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
       }
     }
   },
@@ -3251,6 +3617,661 @@
             "description": "Fecha y hora ISO 8601 con zona horaria; se interpreta en UTC."
           }
         ]
+      }
+    },
+    "/eventos-acceso/personas-elegibles": {
+      "get": {
+        "summary": "Seleccionar Persona existente para registro manual",
+        "description": "Los tres roles autorizados. Personas activas, hasta 20 resultados, sin administración de Personas.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "criterio",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "documento",
+                "institucional",
+                "nombre"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "valor",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Candidatas distinguibles por PK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "personas"
+                  ],
+                  "properties": {
+                    "personas": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PersonaElegible0006"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Búsqueda inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consulta no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eventos-acceso/manual": {
+      "post": {
+        "summary": "Registrar ENTRADA o SALIDA manual",
+        "description": "OPERADOR, ADMINISTRADOR y SUPERADMIN. Una clave nueva por declaración; reusar solo para el mismo reintento. No abre barreras.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Token CSRF de la sesión humana."
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "UUIDv4 canónico en minúsculas; unicidad global."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventoManualEntrada0006"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Movimiento nuevo confirmado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventoManualRespuesta0006"
+                }
+              }
+            },
+            "headers": {
+              "Idempotent-Replay": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Reintento idéntico, sin escritura nueva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventoManualRespuesta0006"
+                }
+              }
+            },
+            "headers": {
+              "Idempotent-Replay": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Payload o clave inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF o permiso inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Persona o Punto no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Clave reutilizada con otra declaración.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistencia o auditoría no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eventos-acceso/historial": {
+      "get": {
+        "summary": "Historial de movimientos por rol",
+        "description": "OPERADOR: solo jornada Bogotá actual, filas sin identidad, ID, Punto ni hora exacta; filtros administrativos rechazados. ADMINISTRADOR/SUPERADMIN: histórico ampliado paginado.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limite",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "desplazamiento",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            }
+          },
+          {
+            "in": "query",
+            "name": "id_persona",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN."
+          },
+          {
+            "in": "query",
+            "name": "id_punto_acceso",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN."
+          },
+          {
+            "in": "query",
+            "name": "tipo_movimiento",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ENTRADA",
+                "SALIDA"
+              ]
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN."
+          },
+          {
+            "in": "query",
+            "name": "resultado",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "AUTORIZADO",
+                "RECHAZADO"
+              ]
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN."
+          },
+          {
+            "in": "query",
+            "name": "tipo_incidencia_secuencia",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ENTRADA_REPETIDA",
+                "SALIDA_REPETIDA",
+                "SALIDA_SIN_ENTRADA_DEL_DIA"
+              ]
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN."
+          },
+          {
+            "in": "query",
+            "name": "desde",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN."
+          },
+          {
+            "in": "query",
+            "name": "hasta",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN; hasta es exclusivo."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Esquema según rol autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/HistorialOperador0006"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HistorialAdmin0006"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetros inválidos o filtro prohibido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consulta no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eventos-acceso/alertas": {
+      "get": {
+        "summary": "Proyección consultable de incidencias",
+        "description": "OPERADOR: solo conteos por tipo del día Bogotá, sin IDs, Punto, actor ni tiempo. ADMINISTRADOR/SUPERADMIN: incidencias ampliadas paginadas. Sin push ni notificación física.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limite",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "desplazamiento",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            }
+          },
+          {
+            "in": "query",
+            "name": "id_persona",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN."
+          },
+          {
+            "in": "query",
+            "name": "id_punto_acceso",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN."
+          },
+          {
+            "in": "query",
+            "name": "tipo_movimiento",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ENTRADA",
+                "SALIDA"
+              ]
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN."
+          },
+          {
+            "in": "query",
+            "name": "resultado",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "AUTORIZADO",
+                "RECHAZADO"
+              ]
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN."
+          },
+          {
+            "in": "query",
+            "name": "tipo_incidencia_secuencia",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ENTRADA_REPETIDA",
+                "SALIDA_REPETIDA",
+                "SALIDA_SIN_ENTRADA_DEL_DIA"
+              ]
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN."
+          },
+          {
+            "in": "query",
+            "name": "desde",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN."
+          },
+          {
+            "in": "query",
+            "name": "hasta",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Solo ADMINISTRADOR/SUPERADMIN; hasta es exclusivo."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Esquema según rol autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AlertasOperador0006"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AlertasAdmin0006"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetros inválidos o filtro prohibido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consulta no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eventos-acceso/incidencias/{id_evento}": {
+      "get": {
+        "summary": "Detalle personal de una incidencia",
+        "description": "Solo ADMINISTRADOR/SUPERADMIN. OPERADOR no puede recuperar el evento por ID.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id_evento",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incidencia con contexto autorizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistorialAdminItem0006"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetros inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Incidencia inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consulta no disponible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

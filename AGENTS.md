@@ -61,3 +61,10 @@ Ante fallos, conservar la evidencia, identificar la etapa exacta y distinguir pr
 ### 6. Revisión de código y Git
 
 Codex debe revisar el código que implementa, sus pruebas, contratos y documentación. El usuario y ChatGPT realizarán posteriormente una revisión independiente de los cambios. Comprobar archivos modificados y nuevos, posibles secretos, respaldos, inconsistencias y finales de línea. Codex puede consultar Git; `git add`, commits y push quedan reservados al usuario. No ejecutar `git reset`, `git restore` ni otras operaciones Git de escritura sin autorización específica. El usuario conserva el control de los commits y del push.
+
+### 7. Prevención de errores y calidad de código
+
+- Separar las precondiciones de los verificadores por destino: `recon_tests` exige ausencia de residuos operativos; `recon_dev` conserva datos legítimos y compara sus huellas antes y después. No reutilizar validadores entre bases sin revisar todas sus precondiciones; probar aisladamente las rutas `--antes` y `--despues` de ambas bases antes de usarlas.
+- Reproducir en pruebas locales aisladas los errores de conversión, consultas y transformaciones de SQLAlchemy, sin conectar MySQL. Por ejemplo, para convertir filas de dos columnas a diccionario, usar `dict(conexion.execute(...).all())`, no `dict(conexion.execute(...))`.
+- Ejecutar Ruff desde la implementación, inicialmente sin correcciones automáticas, mediante `ruff check --isolated --no-cache --no-fix --select E4,E7,E9,F src tests scripts`. Revisar cada hallazgo y justificar exclusiones puntuales para fixtures de pytest o importaciones con efectos de registro.
+- La validación final puede combinar pruebas unitarias, integración MySQL autorizada y Ruff, conservando las barreras de seguridad de cada una. Migraciones, respaldos y operaciones Git siguen procedimientos independientes sujetos a autorización; la revisión independiente y las pruebas reales son condiciones de cierre que las comprobaciones estáticas no sustituyen.
