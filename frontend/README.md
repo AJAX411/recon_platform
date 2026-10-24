@@ -1,6 +1,6 @@
-# Frontend 0007-A · Recon Facial
+# Frontend 0007-A y 0007-B · Recon Facial
 
-Primera interfaz React para autenticación humana y administración de Personas. El contrato es el de [`../backend/openapi.json`](../backend/openapi.json); no incluye enrolamiento biométrico ni funciones de otros módulos.
+Interfaz React para autenticación humana y administración de Personas, Usuarios, Puntos de Acceso y Dispositivos Edge. El contrato es el de [`../backend/openapi.json`](../backend/openapi.json); no incluye enrolamiento biométrico ni comunicación física con dispositivos.
 
 ## Requisitos y puesta en marcha local
 
@@ -28,7 +28,19 @@ Vite pasa únicamente `/api/v1` a `http://127.0.0.1:5000` con el host de destino
 
 La aplicación consulta `/auth/me` al cargar. Para el login obtiene antes `/auth/csrf`, envía `X-CSRF-Token` y conserva en memoria el token renovado en la cabecera de la respuesta. Para cualquier escritura posterior obtiene un token nuevo si la página fue recargada. La sesión se guarda exclusivamente en la cookie opaca del backend; ni la sesión ni el CSRF se guardan en `localStorage`. El cierre de sesión revoca la sesión con CSRF.
 
-Las rutas de Personas se muestran solo para SUPERADMIN y ADMINISTRADOR. Flask vuelve a validar sesión, rol y CSRF; el control del navegador es únicamente de navegación. OPERADOR tiene una página inicial sin módulo funcional en esta entrega.
+Las rutas de Personas se muestran solo para SUPERADMIN y ADMINISTRADOR. Usuarios corresponde solo a SUPERADMIN. Puntos de Acceso y Dispositivos Edge pueden consultarse por los tres roles; crear y editar corresponde a SUPERADMIN/ADMINISTRADOR; cambiar estado y modo (en Dispositivos Edge) corresponde a los tres roles según las API existentes. Flask vuelve a validar sesión, rol y CSRF; el control del navegador es únicamente de navegación.
+
+## Módulos de 0007-B
+
+| Rutas | Funciones |
+|---|---|
+| `/usuarios`, `/usuarios/nuevo`, `/usuarios/:id` | Listado paginado, consulta, creación de ADMINISTRADOR/OPERADOR, cambio de rol y estado. Los roles asignables provienen de `/api/v1/iam/roles`. SUPERADMIN inicial protegido. |
+| `/puntos-acceso`, `/puntos-acceso/nuevo`, `/puntos-acceso/:id` | Listado con filtros `codigo`/`estado`, consulta, creación, edición de nombre/descripción y cambio de estado. |
+| `/dispositivos-edge`, `/dispositivos-edge/nuevo`, `/dispositivos-edge/:id` | Listado con filtros `codigo`/`estado`/`modo_operacion`/`id_punto_acceso`, consulta, registro con ID de Punto de Acceso, edición de nombre, cambio de estado y modo. |
+
+Los listados usan 20 registros por página y la API no proporciona total. Los dispositivos nuevos se muestran con el estado que devuelve Flask (`INACTIVO` según la implementación actual). El estado administrativo y `ultima_comunicacion` no constituyen una prueba de conexión o funcionamiento físico. La aplicación envía la contraseña inicial solo en la solicitud HTTPS o HTTP local autorizado y no la escribe en almacenamiento persistente del navegador.
+
+Cuando una página posterior está vacía, «Anterior» permanece disponible y «Siguiente» queda deshabilitado; no se infiere un total inexistente. La desactivación de cuentas y los cambios de estado de Puntos o Dispositivos y de modo de Dispositivos muestran una confirmación en línea. «Cancelar» devuelve el foco al control de origen y no envía la operación; confirmar usa la misma API y el mismo CSRF.
 
 ## Comprobaciones
 
@@ -40,6 +52,8 @@ npm test
 
 Las pruebas del frontend usan datos ficticios y sustitutos de `fetch`; no acceden a MySQL. Para validar manualmente: iniciar Flask con la configuración local, abrir Vite, comprobar login válido e inválido, recargar y confirmar recuperación de sesión, cerrar sesión, repetir con un rol OPERADOR, y con ADMINISTRADOR o SUPERADMIN probar filtros, consulta, registro y errores de validación o duplicidad. Inspeccionar Network para confirmar que la cookie es `HttpOnly`, `Path=/api/v1`, que login devuelve y utiliza un CSRF rotado y que no hay llamadas CORS. No usar datos personales reales para esta validación.
 
+Para validar 0007-B con un entorno de datos de prueba controlado por el responsable: entrar como SUPERADMIN y comprobar Usuarios, creación de una cuenta ADMINISTRADOR/OPERADOR ficticia, cambio de rol/estado y protección de la cuenta SUPERADMIN. Entrar como ADMINISTRADOR y OPERADOR para comprobar navegación y denegaciones. Con Puntos y Dispositivos ficticios autorizados, revisar filtros, páginas, consulta, creación, edición, estado y modo; confirmar que cada escritura incluye `X-CSRF-Token`. Verificar que la ficha de un dispositivo nuevo indica el estado devuelto por Flask y no afirma conexión. Consultar [`INCREMENTO_0007-B.md`](./INCREMENTO_0007-B.md) para el alcance y límites. Estas acciones manuales no se ejecutaron durante el desarrollo.
+
 Para validar accesibilidad: pulsar Tab al cargar para llegar a «Saltar al contenido principal», pulsar Enter y comprobar que el foco llega a `main`; navegar entre Inicio y Personas y comprobar el foco en el contenido y el título del documento. Repetir en pantalla estrecha y con lector de pantalla. Los tests automatizados cubren el enlace de salto y el foco en los cambios de ruta, pero no sustituyen esa comprobación manual.
 
-La API de listado no devuelve total; el botón «Siguiente» se habilita cuando la página contiene el límite de 20 registros y una página adicional puede resultar vacía. El catálogo definitivo de tipos de documento, las reglas especiales pendientes para otras categorías, los módulos futuros y el despliegue TLS quedan fuera de 0007-A.
+La API de listado no devuelve total; el botón «Siguiente» se habilita cuando la página contiene el límite de 20 registros y una página adicional puede resultar vacía. El catálogo definitivo de tipos de documento, las reglas especiales pendientes para otras categorías, el protocolo y autenticación Edge, la operación offline y el despliegue TLS quedan fuera de estos incrementos.

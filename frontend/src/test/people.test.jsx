@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '../auth/AuthContext.jsx'
 import { PeopleListPage } from '../pages/PeopleListPage.jsx'
 import { PersonCreatePage } from '../pages/PersonCreatePage.jsx'
+import { PersonDetailPage } from '../pages/PersonDetailPage.jsx'
 
 vi.mock('../api/auth.js', () => ({
   getCurrentUser: vi.fn().mockResolvedValue({ id_usuario: 1, login: 'admin.ficticio', rol: 'ADMINISTRADOR' }),
@@ -14,7 +15,7 @@ vi.mock('../api/personas.js', () => ({
   listPeople: vi.fn(), getPersonTypes: vi.fn(), createPerson: vi.fn(), getPerson: vi.fn(),
 }))
 
-import { listPeople, getPersonTypes, createPerson } from '../api/personas.js'
+import { listPeople, getPersonTypes, createPerson, getPerson } from '../api/personas.js'
 
 const types = { tipos: [
   { id_tipo_persona: 1, nombre: 'ESTUDIANTE', estado: 'ACTIVO' },
@@ -40,12 +41,60 @@ describe('Personas', () => {
     expect(listPeople).toHaveBeenCalledWith(expect.any(Object), 0, 20, expect.any(AbortSignal))
   })
 
+  it('permite volver desde una segunda página vacía de Personas', async () => {
+    const firstPage = Array.from({ length: 20 }, (_, index) => ({
+      id_persona: index + 1, primer_nombre: `Persona${index + 1}`, primer_apellido: 'Prueba',
+      tipo_documento: 'DOC', numero_documento: `TEST${index + 1}`, tipo_persona: 'VISITANTE', estado: 'ACTIVO',
+    }))
+    listPeople.mockResolvedValueOnce({ personas: firstPage, limite: 20, desplazamiento: 0 })
+      .mockResolvedValueOnce({ personas: [], limite: 20, desplazamiento: 20 })
+      .mockResolvedValueOnce({ personas: firstPage, limite: 20, desplazamiento: 0 })
+    getPersonTypes.mockResolvedValue(types)
+    renderPage('/personas', <PeopleListPage />)
+    expect(await screen.findByRole('rowheader', { name: /Persona1 Prueba/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Siguiente' })).toBeEnabled()
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }))
+    expect(await screen.findByText('No se encontraron Personas con estos filtros.')).toBeInTheDocument()
+    expect(listPeople).toHaveBeenLastCalledWith(expect.any(Object), 20, 20, expect.any(AbortSignal))
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
+    await userEvent.click(screen.getByRole('button', { name: 'Anterior' }))
+    expect(await screen.findByRole('rowheader', { name: /Persona1 Prueba/ })).toBeInTheDocument()
+    expect(listPeople).toHaveBeenLastCalledWith(expect.any(Object), 0, 20, expect.any(AbortSignal))
+  })
+
   it('muestra una Persona recibida y no inventa resultados', async () => {
     listPeople.mockResolvedValue({ personas: [{ id_persona: 7, primer_nombre: 'Prueba', primer_apellido: 'Ficticia', tipo_documento: 'DOC', numero_documento: 'TEST7', tipo_persona: 'VISITANTE', estado: 'ACTIVO' }], limite: 20, desplazamiento: 0 })
     getPersonTypes.mockResolvedValue(types)
     renderPage('/personas', <PeopleListPage />)
     expect(await screen.findByRole('rowheader', { name: /Prueba Ficticia/ })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Consultar Prueba Ficticia' })).toHaveAttribute('href', '/personas/7')
+  })
+
+  it('mantiene Aplicar como principal y Limpiar como secundario sin alterar filtros', async () => {
+    listPeople.mockResolvedValue({ personas: [], limite: 20, desplazamiento: 0 })
+    getPersonTypes.mockResolvedValue(types)
+    renderPage('/personas', <PeopleListPage />)
+    await screen.findByText('No se encontraron Personas con estos filtros.')
+    expect(screen.getByRole('button', { name: 'Aplicar filtros' })).toHaveClass('btn-primary')
+    expect(screen.getByRole('button', { name: 'Limpiar' })).toHaveClass('btn-outline-secondary')
+    fireEvent.change(screen.getByLabelText('Número de documento'), { target: { value: 'DOC-PRUEBA' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
+    await waitFor(() => expect(listPeople).toHaveBeenLastCalledWith(expect.objectContaining({ numero_documento: 'DOC-PRUEBA' }), 0, 20, expect.any(AbortSignal)))
+    await userEvent.click(screen.getByRole('button', { name: 'Limpiar' }))
+    await waitFor(() => expect(listPeople).toHaveBeenLastCalledWith(expect.objectContaining({ numero_documento: '' }), 0, 20, expect.any(AbortSignal)))
+  })
+
+  it('muestra un solo estado junto al título de información administrativa', async () => {
+    getPerson.mockResolvedValue({ id_persona: 7, primer_nombre: 'Prueba', primer_apellido: 'Ficticia',
+      segundo_nombre: null, segundo_apellido: null, tipo_persona: 'VISITANTE', tipo_documento: 'DOC',
+      numero_documento: 'TEST7', identificador_institucional: null, estado: 'ACTIVO' })
+    render(<MemoryRouter initialEntries={['/personas/7']}><AuthProvider><Routes>
+      <Route path="/personas/:id" element={<PersonDetailPage />} />
+    </Routes></AuthProvider></MemoryRouter>)
+    const heading = await screen.findByRole('heading', { name: 'Información administrativa' })
+    expect(within(heading.parentElement).getByText('ACTIVO')).toHaveClass('status-pill')
+    expect(document.querySelectorAll('.status-pill')).toHaveLength(1)
   })
 
   it('muestra errores del servidor en el listado', async () => {

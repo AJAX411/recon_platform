@@ -5,8 +5,9 @@ import { useAuth } from '../auth/useAuth.js'
 import { Alert, EmptyState, Skeleton } from '../components/Feedback.jsx'
 import { Field, SelectField } from '../components/Field.jsx'
 import { DataTable } from '../components/DataTable.jsx'
+import { CollectionControls } from '../components/CollectionControls.jsx'
+import { PAGE_SIZE } from '../hooks/usePagedList.js'
 
-const PAGE_SIZE = 20
 const INITIAL_FILTERS = { tipo_documento: '', numero_documento: '', identificador_institucional: '', tipo_persona: '', estado: '' }
 
 function nameOf(person) {
@@ -85,14 +86,15 @@ export function PeopleListPage() {
             <option value="">Todos</option><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option>
           </SelectField>
         </div>
-        <div className="filter-actions"><button className="btn btn-primary" type="submit">Aplicar filtros</button><button className="btn btn-link" type="button" onClick={clearFilters}>Limpiar</button></div>
+        <div className="filter-actions"><button className="btn btn-primary" type="submit">Aplicar filtros</button><button className="btn btn-outline-secondary" type="button" onClick={clearFilters}>Limpiar</button></div>
       </fieldset>
     </form>
     <div className="results-panel">
       <div className="results-heading"><h2>Resultados</h2>{status === 'success' && <span className="muted">Página {Math.floor(offset / PAGE_SIZE) + 1}</span>}</div>
       {status === 'loading' && <Skeleton rows={5} />}
       {status === 'error' && <Alert message={error} onRetry={() => setReload((number) => number + 1)} />}
-      {status === 'success' && (people.length ? <>
+      {status === 'success' && <>
+        {people.length ?
         <DataTable caption={`Personas obtenidas de la API, página ${Math.floor(offset / PAGE_SIZE) + 1}`}
           columns={['Persona', 'Documento', 'Tipo', 'Estado', 'Acción']}>
           {people.map((person) => <tr key={person.id_persona}>
@@ -102,11 +104,11 @@ export function PeopleListPage() {
             <td><Link to={`/personas/${person.id_persona}`} aria-label={`Consultar ${nameOf(person)}`}>Consultar</Link></td>
           </tr>)}
         </DataTable>
-        <nav className="pagination-controls" aria-label="Paginación de Personas">
-          <button type="button" className="btn btn-outline-secondary" disabled={offset === 0} onClick={() => setOffset(offset - PAGE_SIZE)}>Anterior</button>
-          <button type="button" className="btn btn-outline-secondary" disabled={people.length < PAGE_SIZE} onClick={() => setOffset(offset + PAGE_SIZE)}>Siguiente</button>
-        </nav>
-      </> : <EmptyState>No se encontraron Personas con estos filtros.</EmptyState>)}
+        : <EmptyState>No se encontraron Personas con estos filtros.</EmptyState>}
+        <CollectionControls label="Personas" offset={offset} count={people.length}
+          previous={() => setOffset((value) => Math.max(0, value - PAGE_SIZE))}
+          next={() => setOffset((value) => Math.min(1_000_000, value + PAGE_SIZE))} />
+      </>}
     </div>
   </section>
 }

@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import { getPerson } from '../api/personas.js'
 import { useAuth } from '../auth/useAuth.js'
 import { Alert, Skeleton } from '../components/Feedback.jsx'
+import { StatusBadge } from '../components/StatusBadge.jsx'
 
 function Datum({ label, children }) { return <div><dt>{label}</dt><dd>{children || 'No registrado'}</dd></div> }
 
@@ -36,9 +37,8 @@ export function PersonDetailPage() {
       {location.state?.created && <Alert message="Persona registrada correctamente." tone="success" />}
       <div className="page-head"><div><p className="eyebrow">Persona · ID {person.id_persona}</p>
         <h1 id="person-title">{[person.primer_nombre, person.segundo_nombre, person.primer_apellido, person.segundo_apellido].filter(Boolean).join(' ')}</h1></div>
-        <span className={`status-pill ${person.estado === 'ACTIVO' ? 'active' : 'inactive'}`}>{person.estado}</span>
       </div>
-      <div className="detail-panel"><h2>Información administrativa</h2>
+      <div className="detail-panel"><div className="detail-heading"><h2>Información administrativa</h2><StatusBadge estado={person.estado} /></div>
         <dl className="detail-grid">
           <Datum label="Primer nombre">{person.primer_nombre}</Datum><Datum label="Segundo nombre">{person.segundo_nombre}</Datum>
           <Datum label="Primer apellido">{person.primer_apellido}</Datum><Datum label="Segundo apellido">{person.segundo_apellido}</Datum>

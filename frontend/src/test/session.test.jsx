@@ -26,8 +26,29 @@ describe('rutas, sesión y permisos visuales', () => {
     renderApp('/personas')
     expect(await screen.findByRole('heading', { name: 'Bienvenido a Recon Facial' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Personas' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Puntos de Acceso' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Dispositivos Edge' })).toBeInTheDocument()
     expect(fetch).toHaveBeenCalledWith('/api/v1/auth/me', expect.any(Object))
     expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('impide a ADMINISTRADOR abrir Usuarios', async () => {
+    const calls = vi.fn().mockResolvedValue(json({ id_usuario: 4, login: 'admin.ficticio', rol: 'ADMINISTRADOR' }))
+    vi.stubGlobal('fetch', calls)
+    renderApp('/usuarios')
+    expect(await screen.findByRole('heading', { name: 'Bienvenido a Recon Facial' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument()
+    expect(calls).toHaveBeenCalledTimes(1)
+  })
+
+  it('impide a OPERADOR abrir la creación de puntos', async () => {
+    const calls = vi.fn().mockResolvedValue(json({ id_usuario: 3, login: 'operador.ficticio', rol: 'OPERADOR' }))
+    vi.stubGlobal('fetch', calls)
+    renderApp('/puntos-acceso/nuevo')
+    expect(await screen.findByRole('heading', { name: 'Bienvenido a Recon Facial' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Crear Punto de Acceso' })).not.toBeInTheDocument()
+    expect(calls).toHaveBeenCalledTimes(1)
   })
 
   it('retira el acceso cuando la API indica que la sesión expiró', async () => {
@@ -42,6 +63,18 @@ describe('rutas, sesión y permisos visuales', () => {
     expect(await screen.findByRole('heading', { name: 'Iniciar sesión' })).toBeInTheDocument()
     expect(calls.mock.calls.some(([url]) => url.startsWith('/api/v1/personas?'))).toBe(true)
     expect(screen.queryByRole('heading', { name: 'Personas' })).not.toBeInTheDocument()
+  })
+
+  it('retira el acceso a Dispositivos Edge cuando su listado devuelve 401', async () => {
+    const calls = vi.fn((url) => {
+      if (url === '/api/v1/auth/me') return Promise.resolve(json({ id_usuario: 4, login: 'admin.ficticio', rol: 'ADMINISTRADOR' }))
+      if (url.startsWith('/api/v1/dispositivos-edge?')) return Promise.resolve(json({ error: 'No hay una sesión activa.' }, 401))
+      throw new Error(`Ruta de prueba inesperada: ${url}`)
+    })
+    vi.stubGlobal('fetch', calls)
+    renderApp('/dispositivos-edge')
+    expect(await screen.findByRole('heading', { name: 'Iniciar sesión' })).toBeInTheDocument()
+    expect(calls.mock.calls.some(([url]) => url.startsWith('/api/v1/dispositivos-edge?'))).toBe(true)
   })
 
   it('muestra Personas a ADMINISTRADOR y cierra sesión con CSRF', async () => {
@@ -68,6 +101,7 @@ describe('rutas, sesión y permisos visuales', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
     expect(await screen.findByRole('heading', { name: 'Bienvenido a Recon Facial' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Personas' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Usuarios' })).toBeInTheDocument()
     expect(calls.mock.calls[2][1].headers['X-CSRF-Token']).toBe('anonimo')
   })
 
