@@ -1,0 +1,172 @@
+# Incremento 0008 · Bloque 1 · Propuesta de frontend de Eventos de Acceso
+
+**Estado: BLOQUE 1 APROBADO POR EL RESPONSABLE — AUTORIZADA IMPLEMENTACIÓN DEL BLOQUE 2.**
+
+**Fecha de preparación:** 25/10/2026.
+
+**Alcance aprobado:** interfaz web humana de registro manual, historial, alertas e incidencias, conforme a las cuatro pantallas y proyecciones por rol definidas aquí. La arquitectura biométrica y los contratos Edge conservan sus estados PROVISIONALES o PENDIENTES.
+
+**Precisiones de la revisión independiente incorporadas para 0008:** buscar Personas elegibles con el límite vigente de 20 resultados; seleccionar Puntos activos con paginación; actualizar consultas manualmente; mantener clave UUIDv4, los tres campos del cuerpo y actor en memoria para cualquier reintento explícito de resultado incierto; impedir dos envíos simultáneos mediante barrera síncrona; no prometer recuperar la clave tras recarga. La búsqueda GET existente transporta datos en query: no copiarlos a rutas React, consola, almacenamiento persistente o telemetría y verificar el saneamiento de logs HTTP antes de operar con datos reales. Las pruebas usan solo datos ficticios. No se cambia el contrato backend.
+
+## 1. Manifiesto de fuentes, estado y precedencia
+
+- Baseline de decisiones: **Contexto Maestro v1.7 OFICIAL**, vigente desde 25/10/2026. ARQ-IAM-001 y ARQ-BIO-POST16-01 ya están incorporadas; las rutas biométricas integradas continúan sin implementar. La resolución formal 0006 (21/10/2026, **APROBADA CON AJUSTES**) y su especificación consolidada v1.0 (22/10/2026) precisan EventoAcceso; sus menciones históricas de v1.5 no desplazan v1.7.
+- Fuentes técnicas consultadas: [OpenAPI](../backend/openapi.json), [API de EventoAcceso](../backend/src/recon_platform/accesos/eventos_api.py), [casos de uso](../backend/src/recon_platform/accesos/eventos_aplicacion.py), [reglas](../backend/src/recon_platform/accesos/eventos_dominio.py), [persistencia y proyecciones](../backend/src/recon_platform/accesos/eventos_infraestructura.py), [API de Puntos](../backend/src/recon_platform/accesos/api.py), [pruebas 0006 unitarias](../backend/tests/unit/test_eventos_acceso_0006.py), [pruebas 0006 MySQL preparadas](../backend/tests/integration/test_eventos_acceso_mysql.py), [README backend](../backend/README.md), [README frontend](./README.md), [manifiesto 0007-A](./INCREMENTO_0007-A.md) y [manifiesto 0007-B](./INCREMENTO_0007-B.md). El código y el contrato describen lo disponible; las pruebas existentes y sus informes históricos no equivalen a una ejecución nueva.
+- Repositorio al inicio: rama `main`, HEAD `c38a09f7f2c8a4fa7c68e603ad46081131aa6b25`, árbol limpio; `git diff --stat` vacío. Los manifiestos 0007-A/B conservan su contexto histórico y no se actualizan retrospectivamente.
+- Se inspeccionó código y contrato, no la base de datos ni un despliegue en ejecución. La disponibilidad operativa del backend y la revisión efectiva de MySQL deberán comprobarse mediante el procedimiento autorizado antes de una validación manual real; este Bloque 1 no las certifica.
+- El Documento principal académico y su Anexo 3 no se adjuntaron a este Bloque 1. Este borrador se limita a las decisiones y contratos citados; la revisión independiente deberá verificar cualquier trazabilidad académica adicional antes de convertirla en requisito de implementación.
+
+## 2. Objetivo, alcance y pantallas candidatas
+
+Preparar una interfaz React para **los tres roles humanos existentes** que utilice exclusivamente la API `/api/v1` de EventoAcceso manual y la consulta administrativa de PuntosAcceso. Flask seguirá siendo la autoridad de sesión, permisos, estados, secuencia, auditoría y persistencia. La propuesta no requiere cambios de backend según el contrato actual; si una necesidad futura excede sus límites, se tramitará como propuesta separada.
+
+| Ruta web propuesta | Función | Roles |
+|---|---|---|
+| `/eventos-acceso/manual` | Seleccionar Persona elegible y Punto activo, declarar ENTRADA/SALIDA y confirmar | OPERADOR, ADMINISTRADOR, SUPERADMIN |
+| `/eventos-acceso/historial` | Vista reducida de jornada o histórico ampliado según el rol | Los tres |
+| `/eventos-acceso/alertas` | Conteos de hoy o listado ampliado de incidencias según el rol | Los tres |
+| `/eventos-acceso/incidencias/:id` | Detalle personal de incidencia existente | ADMINISTRADOR, SUPERADMIN |
+
+Las alertas se consultan a demanda y con actualización manual; no se promete tiempo real. El registro manual refleja una declaración humana validada; no representa apertura de puerta, prueba de presencia ni autorización institucional general.
+
+## 3. Contratos existentes contrastados con OpenAPI y Flask
+
+Todas estas rutas exigen sesión humana. Las lecturas devuelven `Cache-Control: no-store`. Los errores JSON usan `{"error":"…"}`. Flask rechaza parámetros desconocidos o repetidos; las escrituras exigen CSRF. La comprobación CSRF de una escritura ocurre antes de identificar la sesión, por lo que una sesión vencida con token inválido puede recibir `403` antes que `401`.
+
+| Endpoint | Entrada permitida | Respuesta `200` / `201` y particularidades |
+|---|---|---|
+| `GET /api/v1/eventos-acceso/personas-elegibles` | Exactamente `criterio` = `documento`, `institucional` o `nombre`, y `valor` de 3–50 caracteres tras trim, sin controles. Sin paginación. | `{"personas":[{"id_persona", "nombre", "tipo_documento", "documento_final"}]}`, máximo 20 Personas ACTIVAS. Documento e identificador institucional se buscan por coincidencia exacta; `nombre` busca prefijo de primer nombre o primer apellido. `documento_final` contiene los últimos cuatro caracteres. Disponible para OPERADOR sin concederle `GET /personas`. |
+| `GET /api/v1/puntos-acceso` | `limite` 1–100 (50 por defecto), `desplazamiento` 0–1 000 000 (0 por defecto), filtros `codigo` y `estado`. Código se compara exactamente; para selección usar `estado=ACTIVO`. | `{"puntos":[{"id_punto_acceso","codigo","nombre","descripcion","estado","fecha_creacion","fecha_actualizacion"}],"limite","desplazamiento"}`, sin total. Disponible para los tres roles. El backend vuelve a comprobar el estado al registrar. |
+| `POST /api/v1/eventos-acceso/manual` | Cuerpo JSON **exactamente** `id_persona` entero positivo, `id_punto_acceso` entero positivo y `tipo_movimiento` = `ENTRADA`/`SALIDA`; sin query. Cabeceras `X-CSRF-Token` e `Idempotency-Key` UUIDv4 canónico en minúsculas. | Nuevo: `201`, `Idempotent-Replay: false`. Misma clave, actor y cuerpo semántico: `200`, `Idempotent-Replay: true`, sin otro evento. Ambos devuelven `id_evento_acceso`, Persona, Punto, movimiento, `resultado`, `metodo_registro`, actor, instante UTC, incidencia nullable y dispositivo nullable. El servidor fija `AUTORIZADO`, `MANUAL`, actor, hora e `id_dispositivo=NULL`. |
+| `GET /api/v1/eventos-acceso/historial` | `limite` 1–100 (50 por defecto), `desplazamiento` 0–1 000 000. Solo ADMINISTRADOR/SUPERADMIN: `id_persona`, `id_punto_acceso`, `tipo_movimiento`, `resultado`, `tipo_incidencia_secuencia`, `desde` y `hasta`. IDs positivos; enumerados según contrato; fechas ISO 8601 con zona y `desde < hasta`, límite superior exclusivo. | `{"eventos":[…],"limite","desplazamiento","alcance"}`. OPERADOR: `alcance=JORNADA_ACTUAL_REDUCIDA`, solo `tipo_movimiento`, `resultado` y `hora_local_aproximada` redondeada a la hora. Cualquier filtro administrativo produce `400`. Administración: `alcance=HISTORICO_AMPLIADO` y filas con ID, Persona/documento, Punto, actor, movimiento, resultado, método, instante UTC, incidencia y dispositivo. |
+| `GET /api/v1/eventos-acceso/alertas` | Misma paginación y mismos filtros administrativos que historial. Para OPERADOR, sin filtros y `desplazamiento=0`; `limite` se valida pero no pagina conteos. | OPERADOR: `{"conteos_por_incidencia":{tipo: cantidad},"zona_horaria":"America/Bogota"}` de la jornada actual, incluso objeto vacío. Administración: `{"alertas":[filas ampliadas de eventos con incidencia],"limite","desplazamiento"}`; sin total. |
+| `GET /api/v1/eventos-acceso/incidencias/{id_evento}` | ID entero positivo en ruta, sin query; solo ADMINISTRADOR/SUPERADMIN. | Fila ampliada del evento **si tiene incidencia**. `404` si el ID no existe o el evento carece de incidencia; `403` para OPERADOR aunque conozca un ID. |
+
+| Endpoint | Errores documentados y producidos por Flask |
+|---|---|
+| `personas-elegibles` | `400` búsqueda inválida; `401` sin sesión; `403` permiso o transporte; `503` consulta no disponible. No hay `404` por cero resultados: la lista queda vacía. |
+| `puntos-acceso` (GET) | `400` filtro/paginación inválidos; `401` sin sesión; `403` permiso o transporte; `503` servicio no disponible. No hay `404` por lista vacía. |
+| `manual` (POST) | `400` cuerpo/clave inválidos; `401` sin sesión; `403` CSRF, permiso o transporte; `404` Persona/Punto ausente o no activo; `409` clave ya asociada a otra declaración/actor; `503` persistencia o auditoría no disponible. |
+| `historial` y `alertas` | `400` filtros o paginación inválidos (incluye filtros administrativos de OPERADOR); `401` sin sesión; `403` permiso o transporte; `503` consulta no disponible. |
+| `incidencias/{id_evento}` | `400` query inválida; `401` sin sesión; `403` OPERADOR o transporte; `404` sin incidencia para ese ID; `503` consulta no disponible. Un ID de ruta que no convierte a entero no coincide con la ruta Flask y puede resultar en el 404 genérico del enrutador. |
+
+**Selección y límites de API.** La búsqueda de Personas no permite paginar más allá de 20 coincidencias: la UI debe permitir refinar por documento o identificador exacto y distinguir homónimos con PK, tipo y final del documento. Si se exige encontrar cualquier Persona solo por nombre con más de 20 coincidencias, se necesitará una propuesta de backend separada. Para Puntos, paginar el filtro servidor `estado=ACTIVO` y ofrecer búsqueda por código exacto; no inferir un total. Ni el listado ni un valor seleccionado garantizan que un Punto o Persona conserve `ACTIVO` hasta el POST.
+Un replay válido del mismo actor y cuerpo puede devolver `200` con el evento original aunque Persona o Punto hayan pasado a INACTIVO; una declaración **nueva** sí exige ambos activos.
+
+**Privacidad del buscador existente.** `personas-elegibles` transporta el `valor` en la query de un GET, incluso si es un documento o nombre. `Cache-Control: no-store` no garantiza que un servidor, proxy o log de acceso omita esa URL. El frontend no debe copiar la búsqueda a la ruta web, historial del navegador, consola ni telemetría; antes de utilizar datos personales reales se requiere comprobar la configuración de logs y su saneamiento. Si esa vía no satisface la política de privacidad, se necesitará un cambio de contrato backend aprobado por separado. Este Bloque 1 no lo realiza ni declara resuelto.
+
+**Fechas administrativas.** La UI debe etiquetar `America/Bogota` y convertir el intervalo elegido a instantes ISO con zona, sin interpretar la fecha como zona del navegador. Para días completos, `desde` es el inicio del primer día y `hasta` el inicio exclusivo del día siguiente al último seleccionado. Validar orden antes de consultar; Flask repite la validación. No introducir controles de fecha en la vista OPERADOR.
+
+## 4. Reglas funcionales y permisos de presentación
+
+La jornada funcional es el **día civil America/Bogota**, calculado por Flask desde instantes UTC. Solo el último EventoAcceso `AUTORIZADO` de la misma Persona dentro de la jornada interviene en la secuencia. Un manual `AUTORIZADO` con incidencia sí participa; un `RECHAZADO` no. Primera SALIDA del día, ENTRADA repetida y SALIDA repetida se conservan como eventos `AUTORIZADO` con `SALIDA_SIN_ENTRADA_DEL_DIA`, `ENTRADA_REPETIDA` o `SALIDA_REPETIDA` respectivamente. No hay movimientos ficticios a medianoche ni inferencia de presencia real.
+
+Antes de crear, el backend verifica sesión, CSRF, rol y Persona/Punto existentes y ACTIVOS. El frontend ofrece solo candidatos válidos según las lecturas, pero no sustituye esas comprobaciones. `ACTIVO` en Persona no significa enrolamiento ni derecho institucional de acceso. `ObservacionBiometricaEdge` es un resultado técnico distinto de `EventoAcceso`; este flujo no lo produce ni lo consume.
+
+| Función y datos visibles | OPERADOR | ADMINISTRADOR / SUPERADMIN |
+|---|---|---|
+| Registro MANUAL | Sí, con búsqueda específica de Personas elegibles y Puntos activos; confirmación de declaración | Sí, mismo endpoint y precondiciones |
+| Historial | Solo hoy Bogotá; movimiento, resultado y hora aproximada, sin ID de evento/Persona, Punto, actor, documento ni incidencia por fila | Histórico ampliado, paginado y con filtros aprobados; datos personales solo donde los devuelve Flask |
+| Alertas | Solo conteos agregados por incidencia de hoy; sin enlaces a detalle, ID, Punto, actor u hora | Listado ampliado paginado y filtrable, enlace a detalle solo cuando existe incidencia |
+| Detalle de incidencia | Sin ruta navegable ni llamada API; acceso directo denegado por backend | Detalle autorizado por ID, con `404` si no corresponde a una incidencia |
+
+Para OPERADOR, la búsqueda y la confirmación muestran solamente los datos necesarios para declarar el movimiento. Después de registrar, no convertir `id_evento_acceso`, `id_persona` o el actor recibidos en enlaces al historial ampliado o a incidencias. La API decide el permiso incluso si el navegador fue manipulado. Las proyecciones reducidas disminuyen datos directos, pero no garantizan anonimato frente a observación externa en jornadas de poco volumen.
+
+## 5. Flujo de registro, seguridad e idempotencia
+
+1. La persona usuaria busca y **selecciona explícitamente** una fila de `personas-elegibles`; editar el criterio o valor invalida la selección previa. Selecciona un Punto del listado `ACTIVO` y ENTRADA/SALIDA. Validar selección e integridad sin enviar otros campos.
+2. Mostrar una confirmación accesible con la Persona elegida, Punto y movimiento declarado. **Cancelar no envía POST** ni reserva una declaración. Al confirmar, fijar una copia inmutable del cuerpo y generar **una** clave con `crypto.randomUUID()` para esa declaración; impedir un segundo envío simultáneo con una barrera síncrona además del estado visual, conservando la defensa UNIQUE del backend.
+3. Reutilizar [cliente HTTP](./src/api/http.js): cookie de sesión `HttpOnly` enviada con `credentials: same-origin`, `cache: no-store` y CSRF en memoria obtenido de `/auth/csrf` cuando falta. Añadir en Bloque 2 una opción acotada para enviar `Idempotency-Key` y obtener metadatos `status`/`Idempotent-Replay` en esta operación, manteniendo el retorno actual de las demás llamadas. Hoy `request()` devuelve solo el JSON y no acepta esta cabecera, por lo que necesita esa extensión frontend.
+4. `201` confirma declaración nueva; `200` con replay confirma la misma declaración ya registrada. Mostrar éxito e incidencia de secuencia, si existe, **sin equipararla a rechazo ni apertura física**. En vista OPERADOR, minimizar el resumen posterior y no crear enlace personal a incidencia. Para iniciar otra declaración, exigir una acción explícita que descarte la anterior y genere nueva clave.
+5. Ante resultado incierto, conservar **en memoria** exactamente clave, cuerpo y actor de la declaración. La acción “Reintentar esta declaración” reenviará esos mismos valores, sin generar clave nueva ni modificar campos. Mantener este estado volátil por encima de la página para que la navegación interna no lo pierda; mostrar una advertencia antes de abandonar la operación o cerrar sesión. No hacer reintentos automáticos. No persistir sesión, CSRF, clave idempotente ni datos personales en `localStorage`, `sessionStorage` o en la ruta web del navegador. La query obligatoria del GET de búsqueda tiene el límite de privacidad señalado arriba. Evitar imprimir solicitudes y respuestas en consola o telemetría.
+6. Una edición posterior a un rechazo definitivo requiere una **nueva declaración explícita y clave nueva**. Un `409` nunca se resuelve rotando la clave automáticamente. Si cambia la cuenta activa, no reintentar la clave anterior como si fuera del nuevo actor. Al cerrar sesión se elimina el estado sensible en memoria.
+7. Si se recarga o cierra la pestaña durante un resultado incierto, el estado en memoria puede perderse. Proponer una advertencia de salida mientras existe una operación pendiente; esa advertencia no garantiza recuperación. Tras perder la clave, la UI debe indicar que no se registre a ciegas otra vez y que se verifique el resultado mediante el procedimiento autorizado. OPERADOR no tiene un historial identificable para comprobarlo por sí mismo: definir en revisión el procedimiento humano de resolución, sin crear almacenamiento persistente del navegador.
+
+| Resultado de la solicitud manual | Tratamiento propuesto |
+|---|---|
+| `201` / `200` | Mostrar confirmación; `200` se rotula como repetición ya registrada, nunca como nuevo evento. |
+| `400` | Mostrar validación; no asumir que el formulario coincide con el contrato. Corregir implica nueva declaración/clave, sin reenviar la clave con cuerpo distinto. |
+| `401` | Flask rechazó la escritura antes del caso de uso: caducar sesión en `AuthContext`. Después de iniciar sesión, preparar una nueva declaración explícita; nunca transferir la clave a otra cuenta. Si no se recibió respuesta HTTP, aplicar la fila de red `status=0`. |
+| `403` | Indicar CSRF o permiso denegado; no abrir un bypass. Si se confirma que era CSRF, obtener token nuevo y ofrecer reintento explícito con la misma clave/cuerpo; un rol revocado no puede reintentar. |
+| `404` | Persona/Punto no disponible, posiblemente cambió su estado. Reconsultar y seleccionar de nuevo; una nueva declaración corregida recibe clave nueva. |
+| `409` | Conflicto de clave/actor/cuerpo. Detener el reenvío y mostrar acción de revisión; no cambiar la clave silenciosamente. |
+| `503` o red `status=0` | Resultado potencialmente incierto para el navegador, incluso si Flask revierte un fallo interno. Mantener declaración y clave, permitir solo reintento explícito idéntico. Si llega `200`, ya se había confirmado; si llega `201`, el primer intento no quedó confirmado. |
+
+La confirmación compartida actual se cierra en `finally` aunque el POST falle. Puede reutilizarse para la primera decisión si la página conserva fuera de ella la declaración pendiente y ofrece el reintento explícito; revisar foco y mensaje después del fallo. Las pruebas deben cubrir este comportamiento y la imposibilidad de editar una declaración incierta.
+
+## 6. Reutilización precisa del frontend 0007
+
+| Pieza existente | Uso previsto y ajuste real |
+|---|---|
+| [`request()`](./src/api/http.js), [AuthContext](./src/auth/AuthContext.jsx) y [`Protected`](./src/App.jsx) | Reusar sesión y CSRF. Extender cliente con cabecera de idempotencia y metadatos de respuesta. Añadir guard semántico para detalle administrativo y enlaces por rol; el backend sigue autorizando. |
+| [`pagePath()`](./src/api/pagination.js), [`usePagedList()`](./src/hooks/usePagedList.js), [`CollectionControls`](./src/components/CollectionControls.jsx) | Historial de ambos roles, alertas de administración y catálogo paginado de Puntos. Límite visual 20; sin inventar total. En alertas OPERADOR no usar paginación: la respuesta es un objeto de conteos. |
+| [`Field` y `SelectField`](./src/components/Field.jsx) | Búsqueda de Persona, Punto, movimiento y filtros administrativos. No reutilizar listado general de Personas para OPERADOR. |
+| [`Confirmation`](./src/components/Confirmation.jsx) | Confirmar o cancelar antes del primer POST; conservar la instantánea en un estado volátil superior al panel para gestionar fallos y reintentos. |
+| [`Alert`, `Skeleton` y `EmptyState`](./src/components/Feedback.jsx) | Carga, vacío, error, éxito y reintento de consultas; distinguir error confirmado de resultado incierto de escritura. |
+| [`DataTable`](./src/components/DataTable.jsx), [`DetailGrid`](./src/components/DetailGrid.jsx), [`useResource`](./src/hooks/useResource.js) | Tablas separadas de historial por rol y alertas ampliadas; detalle de incidencia solo para administración. El diseño de conteos OPERADOR necesita presentación simple propia. |
+| [rutas y foco](./src/App.jsx), [estilos](./src/styles.css) | Navegación, título, salto al contenido, foco y diseño adaptable, ampliados sin crear un sistema paralelo. |
+
+La lista de Personas de 0007-A tiene acceso restringido a administración y expone datos más amplios; no es apta como selector de OPERADOR. [StatusBadge](./src/components/StatusBadge.jsx) solo representa ACTIVO/INACTIVO administrativos; no debe representar incidencias como si fueran estado de Persona o permiso de acceso.
+
+## 7. Matriz aprobada de aceptación y pruebas para el Bloque 2
+
+Pruebas automatizadas de 0008: Vitest/Testing Library con datos **ficticios** y sustitutos de `fetch`/servicios; sin MySQL ni identidades reales. Verifican contrato HTTP y renderizado, sin duplicar las reglas de secuencia ya cubiertas por el backend. En la ejecución final del Bloque 2 pasaron las 48 pruebas anteriores y 34 nuevas; los comandos y resultados exactos constan en la sección 11.
+
+| ID | Escenario y rol | Aceptación observable / prueba prevista |
+|---|---|---|
+| N-01 | Anónimo y tres roles | Sin sesión, rutas protegidas conducen a login; los tres roles ven registro, historial y alertas. OPERADOR no ve detalle ni enlaces a él. |
+| N-02 | URL directa de incidencia | OPERADOR no monta la página ni solicita el detalle; comprobar también `403` efectivo con sustituto de API. ADMINISTRADOR/SUPERADMIN sí consultan; `404` se informa. |
+| R-01 | Búsqueda de Persona | OPERADOR usa `personas-elegibles`, jamás `/personas`; criterio/valor exactos, mínimo/máximo, vacío, homónimos y 20 resultados se presentan sin documento completo; cambio de búsqueda invalida selección. |
+| R-02 | Punto activo | Se consulta `puntos-acceso?estado=ACTIVO` con páginas de 20, código exacto opcional, y se ofrecen solo activos. Si cambia a inactivo, `404` del POST se comunica. |
+| R-03 | Declaración válida | El cuerpo contiene solo tres campos y números enteros; servidor determina hora, actor, resultado, método e incidencia. Primera ENTRADA, SALIDA inicial y repetición muestran la clasificación retornada sin inferir presencia. |
+| R-04 | Confirmación/cancelación | Cancelar vuelve el foco y no llama al POST; confirmar crea una única declaración y bloquea doble clic. Mantener controles de teclado. |
+| I-01 | CSRF y UUIDv4 | POST usa cookie de sesión, CSRF y `Idempotency-Key` canónica minúscula; sesión, CSRF, clave y datos personales no se guardan en almacenamiento persistente ni en la ruta web. La query del GET de búsqueda se revisa según el límite de privacidad descrito. |
+| I-02 | Nuevo y repetido | `201` y `200` se distinguen con estado/cabecera; doble confirmación o reintento con mismo actor y cuerpo conserva exactamente la clave, sin duplicar la declaración. |
+| I-03 | Red/servicio inciertos | Tras `status=0` o `503` queda pendiente el mismo cuerpo/clave; reintento solo explícito; el usuario no puede editar ese cuerpo; al cerrar/recargar se advierte el límite de recuperación. |
+| I-04 | Rechazos | `400`, `401`, `403`, `404` y `409` tienen mensajes y rutas de acción distintas; ningún error rota clave automáticamente; un actor distinto no hereda un reintento. |
+| H-01 | Historial OPERADOR | Solo `limite`/`desplazamiento`; se renderizan movimiento, resultado y hora aproximada de hoy. No hay filtros administrativos, ID, Punto, Persona, actor, detalle, enlace ni hora exacta. |
+| H-02 | Historial administración | Paginación y todos los filtros autorizados; fechas Bogotá con zona y `hasta` exclusivo. Filas ampliadas solo con datos entregados por API; estado vacío y segunda página vacía permiten volver. |
+| A-01 | Alertas OPERADOR | Conteos por incidencia y zona Bogotá, sin lista personal ni paginación falsa; objeto vacío, carga, error y actualización manual. |
+| A-02 | Alertas administración | Lista ampliada paginada y filtrable; solo filas con incidencia enlazan al detalle; vacío, fallo y página posterior vacía. No se anuncia push/WebSocket. |
+| P-01 | Privacidad transversal | Cambiar de OPERADOR a administración y viceversa no deja datos ampliados en la vista; no mezclar respuestas de historial/alertas con búsqueda de Personas. Comprobar navegación directa, filtros prohibidos y respuestas `403`/`400`. |
+| U-01 | Accesibilidad y adaptable | Etiquetas, errores asociados, tabla con caption, mensajes `role=status/alert`, foco tras ruta/cancelación/confirmación, teclado y zoom; sin desbordamiento del documento en móvil y escritorio. Verificación manual con lector de pantalla queda para revisión. |
+| G-01 | Regresión 0007-A/B | Sesión/login/logout, CSRF, Personas, Usuarios, Puntos y Dispositivos mantienen sus permisos, formularios, confirmaciones y paginación; correr build, lint y suite completa. |
+
+## 8. Exclusiones y dependencias
+
+Fuera de 0008: reconocimiento facial, enrolamiento, `ObservacionBiometricaEdge` operativa, cámara/Raspberry reales, autenticación máquina a máquina, persistencia de embeddings o galerías, nuevas tablas/migraciones, dashboard analítico, auditoría web general, push/WebSocket, polling automático de alertas y accionamiento físico de puertas o controles de acceso. No se modifica `recon-edge`, OpenAPI ni Flask en el Bloque 2; cualquier incompatibilidad de contrato se eleva por separado.
+
+## 9. Implementación integral realizada en el Bloque 2
+
+- Se crearon [servicio de Eventos](./src/api/eventos.js) y [conversión de fechas/filtros Bogotá](./src/access/format.js). Se amplió de forma compatible el [cliente HTTP](./src/api/http.js): solo el POST manual puede enviar `Idempotency-Key`; sus metadatos `status` y `Idempotent-Replay` son optativos para el consumidor nuevo. Las llamadas existentes siguen recibiendo el JSON.
+- Se crearon las cuatro páginas: [registro manual](./src/pages/AccessManualPage.jsx), [historial](./src/pages/AccessHistoryPage.jsx), [alertas](./src/pages/AccessAlertsPage.jsx) y [detalle de incidencia](./src/pages/AccessIncidentPage.jsx). [App](./src/App.jsx) incorpora rutas, navegación, título/foco y guard de detalle. [useAuth](./src/auth/useAuth.js) declara el permiso específico de consultas de Accesos.
+- El registro reutiliza [selector de Puntos activos](./src/access/ActivePointSelector.jsx) mediante la API administrativa vigente y añade el [selector acotado de Personas elegibles](./src/access/EligiblePersonSelector.jsx). [Filtros administrativos](./src/access/AccessAdminFilters.jsx) y [tabla de Eventos](./src/access/AccessEventsTable.jsx) presentan solo los datos permitidos según rol. Los [estilos](./src/styles.css) agregan únicamente las piezas nuevas.
+- El [proveedor volátil](./src/access/PendingManualProvider.jsx) conserva en memoria actor, clave y cuerpo de una sola declaración. Usa una barrera síncrona antes del envío, prohíbe reintentos automáticos y no permite editar el cuerpo incierto. Distingue fallo previo al POST de resultado incierto después de intentar la escritura; advierte al salir cuando puede detectarlo. Una recarga pierde la clave sin recuperación automática. No se usa `localStorage`, `sessionStorage`, `IndexedDB` ni URL para guardar la declaración.
+- Se añadieron [pruebas del contrato HTTP](./src/test/access-api.test.js) y [pruebas de interfaz/roles](./src/test/access.test.jsx). Se actualizó el [README frontend](./README.md). No se cambiaron dependencias, backend, OpenAPI, migraciones ni Edge.
+
+## 10. Decisiones aprobadas para 0008 y asuntos abiertos
+
+**Aprobadas por el responsable para este incremento:** las cuatro pantallas de la sección 2; proyecciones y permisos separados por rol; búsqueda elegible limitada a 20; selector paginado de Puntos activos; filtros administrativos y jornada `America/Bogota` con `hasta` exclusivo; actualización manual; clave UUIDv4/cuerpo/actor inmutables para reintento explícito; protección de privacidad y datos ficticios en pruebas. Las precisiones de recuperación y búsqueda GET de la revisión independiente están incorporadas en el código y las secciones 3 y 5.
+
+**PENDIENTE de verificación operativa antes de usar datos reales:** saneamiento de logs HTTP para el valor de búsqueda GET, que puede contener nombre, documento o identificador institucional. No se cambió ese contrato. La búsqueda por nombre continúa limitada a 20 candidatos sin paginación: una necesidad de exploración exhaustiva requerirá propuesta de backend separada. Cuando una recarga pierde la clave de un resultado incierto, la UI indica revisar el caso con un administrador; no puede comprobarlo automáticamente ni ofrece al OPERADOR un historial identificable.
+
+Las decisiones biométricas de v1.7 conservan sus estados **PROVISIONALES**, **EN INVESTIGACIÓN** o **PENDIENTES**. Esta entrega no implementa biometría ni autoriza apertura física.
+
+## 11. Evidencia y límites del Bloque 2
+
+- Estado inicial: `main`, HEAD `c38a09f7f2c8a4fa7c68e603ad46081131aa6b25`; solo [AGENTS.md](../AGENTS.md) modificado y este manifiesto nuevo sin seguimiento, ambos autorizados en Bloque 1. Se conservaron.
+- `npm run build`: **aprobado** con Vite 7.1.12, 87 módulos transformados.
+- `npm run lint`: **aprobado** sin hallazgos.
+- `npm test`: **82/82 pruebas aprobadas** en ocho archivos. Las 48 pruebas previas de 0007-A/B permanecen; 34 son nuevas de 0008. La primera ejecución detectó tres errores de expectativas en las pruebas nuevas; se corrigieron y la suite completa final pasó.
+- Navegador con servidor local y respuestas **ficticias**: registro manual y alertas de OPERADOR a 390 px e historial reducido a 1440 px; documento sin desbordamiento horizontal, títulos y proyecciones reducidas visibles. Los servidores de prueba se cerraron. Esta revisión no sustituye pruebas con lector de pantalla ni validación manual con Flask/MySQL reales.
+- No se ejecutaron migraciones, escrituras MySQL, operaciones Git de escritura ni pruebas físicas Edge. La revisión independiente del responsable y ChatGPT corresponde al Bloque 3.
+
+## 12. Corrección puntual de foco tras la revisión independiente
+
+El responsable informó una revisión independiente favorable del Bloque 2 y señaló el foco tras confirmar el registro manual. Una prueba de comportamiento reprodujo el defecto: [Confirmation](./src/components/Confirmation.jsx) cerraba el panel e intentaba enfocar «Revisar declaración», pero este botón ya estaba desmontado; el foco terminaba en `body` tanto tras éxito como tras resultado incierto.
+
+Se corrigió únicamente [AccessManualPage](./src/pages/AccessManualPage.jsx): el panel de estado permanece como el mismo nodo desde «Enviando declaración» hasta éxito o error, con nombre accesible y actualización `aria-live`. Al confirmar se enfoca una sola vez ese panel; permanece enfocado al cambiar su contenido. El control de foco distingue una confirmación iniciada en la página de una navegación normal y permite enfocar de nuevo el mismo panel al reintentar explícitamente. [Confirmation](./src/components/Confirmation.jsx) no se modificó: al abrir conserva el foco inicial en «Cancelar» y al cancelar devuelve el foco a «Revisar declaración». No se cambiaron clave, cuerpo, actor, bloqueo síncrono, permisos ni reintentos.
+
+Se ampliaron las aserciones de [access.test.jsx](./src/test/access.test.jsx) para apertura, cancelación, progreso, éxito `201` y resultado incierto `0`/`503`. Antes de la corrección fallaron las aserciones del resultado con foco en `body`; después pasaron. En navegador con API HTTP local **ficticia** se comprobó el foco real: «Cancelar» al abrir, «Revisar declaración» al cancelar, región «Declaración registrada» tras `201` y región «No se confirmó el registro» tras `503`. Los servidores de prueba se cerraron; no se usaron datos reales ni MySQL.
+
+Comprobaciones posteriores: `npm run build` **aprobado** (87 módulos), `npm run lint` **aprobado** y `npm.cmd test -- --fileParallelism=false --testTimeout=10000` **82/82 pruebas aprobadas** en ocho archivos. Las ejecuciones con el límite predeterminado de 5 segundos sufrieron tiempos de espera intermitentes bajo carga, también en pruebas antiguas ajenas a esta corrección; no se cambiaron sus tiempos ni archivos. El número de pruebas permanece en 82. Sigue pendiente la revisión independiente de esta corrección antes del Bloque 3.

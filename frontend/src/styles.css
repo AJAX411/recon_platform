@@ -105,6 +105,19 @@ legend { float: none; width: auto; font-size: 1rem; font-weight: 730; margin-bot
 .confirmation-panel { margin-top: var(--space-3); padding: var(--space-3); border: 1px solid var(--brand); border-radius: var(--radius); background: var(--brand-pale); }
 .confirmation-panel h3 { font-size: 1rem; font-weight: 700; margin-bottom: var(--space-1); }
 .confirmation-panel p { color: var(--ink-soft); margin-bottom: var(--space-2); }
+.access-stack { display: grid; gap: 1.25rem; max-width: 68rem; }
+.access-selector h2 { margin-bottom: .75rem; }
+.access-selector form { margin: 1.2rem 0; }
+.access-selector .skeleton-group { margin-top: 1rem; }
+.access-selection { padding: .8rem 1rem; border-radius: .5rem; background: var(--success-pale); color: var(--success); font-weight: 650; }
+.access-outcome { margin-top: 1.5rem; max-width: 68rem; }
+.access-outcome .detail-grid { margin: 1.5rem 0; }
+.access-outcome .alert { margin-top: 1.5rem; }
+.access-recovery-note { max-width: 68rem; margin-top: 1.5rem; }
+.access-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1.5rem 0 0; }
+.access-counts > div { padding: 1.25rem; border: 1px solid var(--line); border-radius: .6rem; background: var(--canvas); }
+.access-counts dt { color: var(--ink-soft); font-size: .85rem; }
+.access-counts dd { margin: .4rem 0 0; color: var(--navy); font-size: 1.65rem; font-weight: 760; }
 .device-mode-save.btn-primary:disabled { background: var(--line); border-color: #aebfc8; color: var(--ink); opacity: 1; cursor: not-allowed; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1.5rem; }
 .required-note { color: var(--ink-soft); font-size: .84rem; }
@@ -129,6 +142,7 @@ legend { float: none; width: auto; font-size: 1rem; font-weight: 730; margin-bot
   .side-link { padding: .55rem .8rem; flex: none; }
   .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .home-features { grid-template-columns: 1fr; }
+  .access-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 650px) {
   .topbar-inner { align-items: start; }
@@ -136,6 +150,7 @@ legend { float: none; width: auto; font-size: 1rem; font-weight: 730; margin-bot
   .page-head, .feature-panel { flex-direction: column; align-items: stretch; }
   .page-head .btn { align-self: flex-start; }
   .filter-grid, .form-grid, .detail-grid { grid-template-columns: 1fr; }
+  .access-counts { grid-template-columns: 1fr; }
   .login-page { grid-template-columns: 1fr; }
   .login-aside { min-height: 12rem; padding: 1.5rem; }
   .login-aside .brand-mark, .login-aside p:last-child { display: none; }

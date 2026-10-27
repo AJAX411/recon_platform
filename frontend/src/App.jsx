@@ -1,6 +1,8 @@
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
-import { useAuth, canEditResources, canManagePeople, canManageUsers } from './auth/useAuth.js'
+import { useAuth, canEditResources, canInspectAccesses, canManagePeople, canManageUsers } from './auth/useAuth.js'
+import { PendingManualProvider } from './access/PendingManualProvider.jsx'
+import { usePendingManual } from './access/usePendingManual.js'
 import { Alert, Skeleton } from './components/Feedback.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
 import { PeopleListPage } from './pages/PeopleListPage.jsx'
@@ -15,6 +17,10 @@ import { PointDetailPage } from './pages/PointDetailPage.jsx'
 import { DevicesListPage } from './pages/DevicesListPage.jsx'
 import { DeviceCreatePage } from './pages/DeviceCreatePage.jsx'
 import { DeviceDetailPage } from './pages/DeviceDetailPage.jsx'
+import { AccessManualPage } from './pages/AccessManualPage.jsx'
+import { AccessHistoryPage } from './pages/AccessHistoryPage.jsx'
+import { AccessAlertsPage } from './pages/AccessAlertsPage.jsx'
+import { AccessIncidentPage } from './pages/AccessIncidentPage.jsx'
 
 function RouteFocus() {
   const { pathname } = useLocation()
@@ -32,7 +38,11 @@ function RouteFocus() {
                       : pathname.startsWith('/puntos-acceso/') ? 'Consultar Punto de Acceso'
                         : pathname === '/dispositivos-edge/nuevo' ? 'Registrar dispositivo'
                           : pathname === '/dispositivos-edge' ? 'Dispositivos Edge'
-                            : pathname.startsWith('/dispositivos-edge/') ? 'Consultar dispositivo' : 'Inicio'
+                        : pathname.startsWith('/dispositivos-edge/') ? 'Consultar dispositivo'
+                          : pathname === '/eventos-acceso/manual' ? 'Registro manual de acceso'
+                            : pathname === '/eventos-acceso/historial' ? 'Historial de accesos'
+                              : pathname === '/eventos-acceso/alertas' ? 'Alertas de acceso'
+                                : pathname.startsWith('/eventos-acceso/incidencias/') ? 'Detalle de incidencia' : 'Inicio'
     document.title = `${page} · Recon Facial`
     if (previousPath.current !== pathname) document.getElementById('contenido')?.focus()
     previousPath.current = pathname
@@ -50,11 +60,14 @@ function SkipLink() {
 
 function AppLayout({ children }) {
   const { user, signOut } = useAuth()
+  const { submission } = usePendingManual()
   const navigate = useNavigate()
   const [logoutError, setLogoutError] = useState('')
   const [busy, setBusy] = useState(false)
 
   async function handleLogout() {
+    if (submission && ['sending', 'uncertain', 'preflight', 'conflict'].includes(submission.phase)
+      && !window.confirm('Hay una declaración manual sin resolver. Al cerrar sesión perderás su clave de reintento. Consulta con un administrador si el resultado sigue incierto. ¿Cerrar sesión?')) return
     setBusy(true)
     setLogoutError('')
     try { await signOut(); navigate('/login', { replace: true }) }
@@ -85,9 +98,16 @@ function AppLayout({ children }) {
         {canManageUsers(user) && <NavLink to="/usuarios" className={({ isActive }) => `side-link${isActive ? ' active' : ''}`}>Usuarios</NavLink>}
         <NavLink to="/puntos-acceso" className={({ isActive }) => `side-link${isActive ? ' active' : ''}`}>Puntos de Acceso</NavLink>
         <NavLink to="/dispositivos-edge" className={({ isActive }) => `side-link${isActive ? ' active' : ''}`}>Dispositivos Edge</NavLink>
+        <NavLink to="/eventos-acceso/manual" className={({ isActive }) => `side-link${isActive ? ' active' : ''}`}>Registro manual</NavLink>
+        <NavLink to="/eventos-acceso/historial" className={({ isActive }) => `side-link${isActive ? ' active' : ''}`}>Historial de accesos</NavLink>
+        <NavLink to="/eventos-acceso/alertas" className={({ isActive }) => `side-link${isActive ? ' active' : ''}`}>Alertas</NavLink>
       </nav>
       <main id="contenido" tabIndex={-1} className="main-content">
         <Alert message={logoutError} />
+        {submission && ['sending', 'uncertain', 'preflight', 'conflict'].includes(submission.phase)
+          && <div className="alert alert-warning" role="status">
+            Hay una declaración manual pendiente en esta sesión. <NavLink to="/eventos-acceso/manual">Revisar declaración</NavLink>.
+          </div>}
         {children}
       </main>
     </div>
@@ -109,11 +129,14 @@ function HomePage() {
         <NavLink className="btn btn-primary" to="/puntos-acceso">Ver Puntos</NavLink></div>
       <div className="feature-panel"><div><h2>Dispositivos Edge</h2><p>Consulta administrativa de dispositivos.</p></div>
         <NavLink className="btn btn-primary" to="/dispositivos-edge">Ver Dispositivos</NavLink></div>
+      <div className="feature-panel"><div><h2>Accesos manuales</h2><p>Registro de movimientos y consulta autorizada.</p></div>
+        <NavLink className="btn btn-primary" to="/eventos-acceso/manual">Registrar movimiento</NavLink></div>
     </div>
   </section>
 }
 
-function Protected({ children, peopleOnly = false, superOnly = false, resourceEditOnly = false }) {
+function Protected({ children, peopleOnly = false, superOnly = false, resourceEditOnly = false,
+  accessAdminOnly = false }) {
   const { user, status, error, refresh } = useAuth()
   if (status === 'loading') return <main id="contenido" tabIndex={-1} className="centered-state"><Skeleton rows={3} /></main>
   if (status === 'error') return <main id="contenido" tabIndex={-1} className="centered-state"><Alert message={error} onRetry={refresh} /></main>
@@ -121,10 +144,11 @@ function Protected({ children, peopleOnly = false, superOnly = false, resourceEd
   if (peopleOnly && !canManagePeople(user)) return <Navigate to="/" replace />
   if (superOnly && !canManageUsers(user)) return <Navigate to="/" replace />
   if (resourceEditOnly && !canEditResources(user)) return <Navigate to="/" replace />
-  return <AppLayout>{children}</AppLayout>
+  if (accessAdminOnly && !canInspectAccesses(user)) return <Navigate to="/" replace />
+  return <AppLayout key={`${user.id_usuario}:${user.rol}`}>{children}</AppLayout>
 }
 
-export function App() {
+function AppContent() {
   const { user, status } = useAuth()
   return <><SkipLink /><Routes>
     <Route path="/login" element={status === 'authenticated' && user ? <Navigate to="/" replace /> : <LoginPage />} />
@@ -141,6 +165,14 @@ export function App() {
     <Route path="/dispositivos-edge" element={<Protected><DevicesListPage /></Protected>} />
     <Route path="/dispositivos-edge/nuevo" element={<Protected resourceEditOnly><DeviceCreatePage /></Protected>} />
     <Route path="/dispositivos-edge/:id" element={<Protected><DeviceDetailPage /></Protected>} />
+    <Route path="/eventos-acceso/manual" element={<Protected><AccessManualPage /></Protected>} />
+    <Route path="/eventos-acceso/historial" element={<Protected><AccessHistoryPage /></Protected>} />
+    <Route path="/eventos-acceso/alertas" element={<Protected><AccessAlertsPage /></Protected>} />
+    <Route path="/eventos-acceso/incidencias/:id" element={<Protected accessAdminOnly><AccessIncidentPage /></Protected>} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes><RouteFocus /></>
+}
+
+export function App() {
+  return <PendingManualProvider><AppContent /></PendingManualProvider>
 }

@@ -1,6 +1,6 @@
-# Frontend 0007-A y 0007-B · Recon Facial
+# Frontend 0007-A, 0007-B y 0008 · Recon Facial
 
-Interfaz React para autenticación humana y administración de Personas, Usuarios, Puntos de Acceso y Dispositivos Edge. El contrato es el de [`../backend/openapi.json`](../backend/openapi.json); no incluye enrolamiento biométrico ni comunicación física con dispositivos.
+Interfaz React para autenticación humana, administración de Personas, Usuarios, Puntos de Acceso y Dispositivos Edge, y registro/consulta de Eventos de Acceso manuales. El contrato es el de [`../backend/openapi.json`](../backend/openapi.json); no incluye enrolamiento biométrico ni comunicación física con dispositivos.
 
 ## Requisitos y puesta en marcha local
 
@@ -39,6 +39,21 @@ Las rutas de Personas se muestran solo para SUPERADMIN y ADMINISTRADOR. Usuarios
 | `/dispositivos-edge`, `/dispositivos-edge/nuevo`, `/dispositivos-edge/:id` | Listado con filtros `codigo`/`estado`/`modo_operacion`/`id_punto_acceso`, consulta, registro con ID de Punto de Acceso, edición de nombre, cambio de estado y modo. |
 
 Los listados usan 20 registros por página y la API no proporciona total. Los dispositivos nuevos se muestran con el estado que devuelve Flask (`INACTIVO` según la implementación actual). El estado administrativo y `ultima_comunicacion` no constituyen una prueba de conexión o funcionamiento físico. La aplicación envía la contraseña inicial solo en la solicitud HTTPS o HTTP local autorizado y no la escribe en almacenamiento persistente del navegador.
+
+## Incremento 0008 — Eventos de Acceso manuales
+
+| Ruta web | Función y permisos |
+|---|---|
+| `/eventos-acceso/manual` | Los tres roles buscan Personas activas en el selector específico, eligen Punto activo paginado y declaran ENTRADA/SALIDA con confirmación. |
+| `/eventos-acceso/historial` | OPERADOR ve solo movimiento, resultado y hora aproximada de la jornada Bogotá, sin filtros administrativos; ADMINISTRADOR/SUPERADMIN consultan histórico ampliado paginado y filtrable. |
+| `/eventos-acceso/alertas` | OPERADOR ve conteos agregados del día; ADMINISTRADOR/SUPERADMIN ven incidencias ampliadas paginadas y filtrables. Actualización manual. |
+| `/eventos-acceso/incidencias/:id` | Detalle personal solo para ADMINISTRADOR/SUPERADMIN. Flask revalida la autorización; OPERADOR no monta esta página. |
+
+El registro utiliza la sesión humana y CSRF existentes. Cada declaración confirmada lleva una clave `Idempotency-Key` UUIDv4 generada una sola vez; el cliente conserva en memoria clave, actor y cuerpo inmutable para un reintento **explícito** tras un resultado incierto. Una barrera síncrona impide dos envíos simultáneos. `201` indica evento nuevo y `200` recupera el ya registrado. No hay reintentos automáticos ni persistencia de clave, sesión o datos de la declaración en almacenamiento del navegador. Al recargar se pierde la clave: si el resultado era incierto, se debe consultar con un administrador antes de declarar otra vez el mismo movimiento. La aplicación advierte antes de salir cuando puede detectar una declaración pendiente, sin prometer recuperación tras recarga.
+
+La búsqueda de Personas admite `nombre`, `documento` o `institucional` y devuelve hasta 20 resultados; el Punto se consulta con `estado=ACTIVO` y el backend verifica ambos estados otra vez al registrar. El GET de búsqueda transporta el valor en la query: la interfaz no lo copia a rutas React ni a almacenamiento persistente. **El saneamiento de logs HTTP queda pendiente de verificación antes de operar con datos personales reales.** Los filtros administrativos de fechas se interpretan como días civiles de `America/Bogota` y envían un límite `hasta` exclusivo; la zona del navegador no interviene. El registro MANUAL no demuestra presencia real, reconocimiento facial ni apertura de puertas.
+
+El [manifiesto 0008](./INCREMENTO_0008_BLOQUE1_PROPUESTA.md) contiene permisos, errores, exclusiones y criterios de aceptación aprobados para este incremento. La revisión independiente y cualquier validación manual con backend/MySQL reales corresponden al Bloque 3; Codex no accede a MySQL en el Bloque 2.
 
 Cuando una página posterior está vacía, «Anterior» permanece disponible y «Siguiente» queda deshabilitado; no se infiere un total inexistente. La desactivación de cuentas y los cambios de estado de Puntos o Dispositivos y de modo de Dispositivos muestran una confirmación en línea. «Cancelar» devuelve el foco al control de origen y no envía la operación; confirmar usa la misma API y el mismo CSRF.
 
