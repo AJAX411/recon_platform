@@ -310,7 +310,7 @@ class ConexionObjetosFalsa:
         self.cuenta = "admin@localhost"
         self.usuario = "admin@localhost"
         self.puerto = 3306
-        self.grants = ["GRANT ALL PRIVILEGES ON *.* TO `admin`@`localhost`"]
+        self.grants: list[str | None] = ["GRANT ALL PRIVILEGES ON *.* TO `admin`@`localhost`"]
         self.eventos = 0
         self.rutinas = 0
         self.triggers = 0

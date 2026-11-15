@@ -54,10 +54,10 @@ def validar_identidad(conexion: Connection) -> None:
 
 
 def validar_tablas_y_revision(conexion: Connection, etapa: str) -> None:
-    tablas = dict(conexion.execute(text(
+    tablas = {clave: valor for clave, valor in conexion.execute(text(
         "SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES "
         "WHERE TABLE_SCHEMA = DATABASE()"
-    )).all())
+    )).all()}
     esperadas = TABLAS_PREVIAS | ({"auditoria_personas"} if etapa == "despues" else set())
     exigir(set(tablas) == esperadas and all(motor == "InnoDB" for motor in tablas.values()),
            "Tablas o motores de recon_dev inesperados.")
@@ -112,7 +112,8 @@ def verificar(etapa: str, *, guardar: Path | None = None,
            "Falta configuración explícita de MySQL de desarrollo.")
     try:
         uri = obtener_uri_mysql(pruebas=False)
-        exigir(uri is not None, "La configuración MySQL de desarrollo está incompleta.")
+        if uri is None:
+            raise VerificacionFallida("La configuración MySQL de desarrollo está incompleta.")
         url = make_url(uri)
         validar_destino(url)
     except VerificacionFallida:
@@ -132,11 +133,11 @@ def verificar(etapa: str, *, guardar: Path | None = None,
                     verificar_esquema(conexion)
                     verificar_datos_previos(conexion)
                     verificar_sesion_nueva(conexion, exigir_vacia=False)
-                    borrados = dict(conexion.execute(text(
+                    borrados = {clave: valor for clave, valor in conexion.execute(text(
                         "SELECT CONSTRAINT_NAME, DELETE_RULE "
                         "FROM information_schema.REFERENTIAL_CONSTRAINTS "
                         "WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'sesion_usuario'"
-                    )).all())
+                    )).all()}
                     exigir(borrados == {"fk_sesion_usuario_cuenta": "RESTRICT"},
                            "La política de borrado de sesión no coincide con 0003.")
                     if etapa == "despues":

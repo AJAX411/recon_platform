@@ -15,7 +15,7 @@ from sqlalchemy import text
 from recon_platform import create_app
 from recon_platform.extensions import db
 from recon_platform.identidad.infraestructura.modelos import SesionUsuarioModelo
-from recon_platform.identidad.infraestructura.sesiones import RepositorioSesionesSQLAlchemy
+from recon_platform.identidad.infraestructura.repositorios_sesiones import RepositorioSesionesSQLAlchemy
 from verificar_recon_dev_0002 import DESTINO, TABLAS, VARIABLES, VerificacionFallida
 from verificar_recon_dev_0003 import (
     verificar_datos_previos, verificar_esquema, verificar_sesion_nueva,
@@ -132,7 +132,7 @@ def flujo_http(cliente: FlaskClient, estado: EstadoInicial, login: str,
     if respuesta_csrf.status_code != 200 or token_anonimo is None:
         raise VerificacionFallida("No se pudo obtener una sesión anónima y CSRF.")
     cookie_anonima = cliente.get_cookie("recon_session", path="/api/v1")
-    exigir(cookie_anonima is not None and cookie_anonima.http_only
+    exigir(cookie_anonima is not None and bool(cookie_anonima.http_only)
            and cookie_anonima.same_site == "Lax" and not cookie_anonima.secure,
            "Los atributos de la cookie local no coinciden con la configuración aprobada.")
     datos_csrf = respuesta_csrf.get_json(silent=True)

@@ -12,7 +12,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from recon_platform.identidad.aplicacion.casos_de_uso import (
+from recon_platform.identidad.servicios.cuentas import (
     BootstrapSuperadmin,
     CambiarRolUsuario,
     ConsultarUsuarioPlataforma,
@@ -180,6 +180,7 @@ def test_crear_consultar_cuenta_sin_crear_persona(sesion_iam_mysql: Session) -> 
         select(func.count()).select_from(PersonaModelo)
     )
     actor = _administrador_ficticio(sesion_iam_mysql)
+    assert actor.id_usuario is not None
     login = _login()
     creada = _crear_cuenta(sesion_iam_mysql, actor_id=actor.id_usuario, login=login)
     assert creada.id_usuario is not None
@@ -199,7 +200,9 @@ def test_crear_consultar_cuenta_sin_crear_persona(sesion_iam_mysql: Session) -> 
 
 def test_cambio_de_rol_conserva_identidad_y_audita(sesion_iam_mysql: Session) -> None:
     actor = _administrador_ficticio(sesion_iam_mysql)
+    assert actor.id_usuario is not None
     creada = _crear_cuenta(sesion_iam_mysql, actor_id=actor.id_usuario, login=_login())
+    assert creada.id_usuario is not None
     actualizada = CambiarRolUsuario(
         RepositorioIAMSQLAlchemy(sesion_iam_mysql),
         UnidadTrabajoIAMSQLAlchemy(sesion_iam_mysql),
@@ -226,8 +229,10 @@ def test_cambio_de_rol_conserva_identidad_y_audita(sesion_iam_mysql: Session) ->
 
 def test_mysql_rechaza_login_y_rol_duplicados(sesion_iam_mysql: Session) -> None:
     actor = _administrador_ficticio(sesion_iam_mysql)
+    assert actor.id_usuario is not None
     login = _login()
     original = _crear_cuenta(sesion_iam_mysql, actor_id=actor.id_usuario, login=login)
+    assert original.id_usuario is not None
     sesion_iam_mysql.add(UsuarioPlataformaModelo(
         login=login,
         hash_contrasena=generar_hash_contrasena(CLAVE_FICTICIA),
@@ -248,6 +253,7 @@ def test_mysql_rechaza_login_y_rol_duplicados(sesion_iam_mysql: Session) -> None
 
 def test_mysql_rechaza_rol_inexistente_y_rol_nulo(sesion_iam_mysql: Session) -> None:
     maximo = sesion_iam_mysql.scalar(select(func.max(RolModelo.id_rol)))
+    assert maximo is not None
     for id_rol in (maximo + 1000, None):
         login = _login()
         sesion_iam_mysql.add(UsuarioPlataformaModelo(
@@ -270,6 +276,7 @@ def test_fallo_posterior_a_flush_revierte_cuenta_y_auditoria(
             raise RuntimeError("Fallo ficticio posterior al flush")
 
     actor = _administrador_ficticio(sesion_iam_mysql)
+    assert actor.id_usuario is not None
     login = _login()
     auditorias_antes = sesion_iam_mysql.scalar(
         select(func.count()).select_from(AuditoriaIAMModelo)
@@ -330,12 +337,15 @@ def test_consultas_administrativas_iam_acotadas_y_autorizadas(
     sesion_iam_mysql: Session,
 ) -> None:
     actor = _administrador_ficticio(sesion_iam_mysql)
+    assert actor.id_usuario is not None
     primero = _crear_cuenta(
         sesion_iam_mysql, actor_id=actor.id_usuario, login=_login()
     )
+    assert primero.id_usuario is not None
     segundo = _crear_cuenta(
         sesion_iam_mysql, actor_id=actor.id_usuario, login=_login()
     )
+    assert segundo.id_usuario is not None
     repo = RepositorioIAMSQLAlchemy(sesion_iam_mysql)
     unidad = UnidadTrabajoIAMSQLAlchemy(sesion_iam_mysql)
     assert {rol.nombre for rol in ListarRoles(repo, unidad).ejecutar(

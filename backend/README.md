@@ -2,6 +2,100 @@
 
 Backend de la plataforma web del Proyecto Recon Facial.
 
+## Incremento 0009 — organización local del backend
+
+La estructura B controlada se implementó localmente en el Bloque 2 autorizado
+el 14/11/2026. Se conservan el monolito modular por capacidades, el Contexto
+Maestro v1.7 OFICIAL y los estados de sus resoluciones. El resultado y las
+verificaciones están en el [manifiesto 0009](./INCREMENTO_0009_ESTRUCTURA_UNIFORME.md).
+El Bloque 3 y la revisión independiente están pendientes. Las referencias
+operativas y resultados de otros incrementos que siguen abajo son históricos;
+esta reorganización no certifica el estado actual de una base MySQL.
+
+Cada capacidad existente —Identidad, Personas, Accesos, Integración Edge
+administrativa y Auditoría— contiene los mismos grupos de responsabilidades:
+
+| Grupo | Responsabilidad |
+|---|---|
+| Controladores | HTTP, JSON, códigos, cabeceras, filtros y guards |
+| DTO | Funciones explícitas de validación de forma y representación acotada |
+| Servicios | Casos de uso existentes, reglas de aplicación y transacciones |
+| Puertos | Contratos de persistencia y colaboración requeridos por los servicios |
+| Dominio | Entidades y reglas, independientes de Flask y SQLAlchemy |
+| Infraestructura | Modelos ORM, repositorios y unidades de trabajo existentes |
+
+La [fábrica](./src/recon_platform/__init__.py) registra los mismos siete
+Blueprints. [Composición](./src/recon_platform/composicion.py) construye los
+adaptadores y casos por petición con la misma `db.session`; recibe explícitamente
+la clave CSRF y los relojes cuando corresponde. No importa controladores ni
+confirma transacciones. El adaptador [seguridad HTTP](./src/recon_platform/identidad/controladores/seguridad.py)
+conserva CSRF, transporte, roles y el único reloj IAM `ahora_utc`. Autenticación
+consulta ese atributo desde el módulo; Eventos conserva su reloj `_reloj`,
+que pasa como callable a composición.
+
+Ejemplos para recorrer el código:
+
+- Personas: [controlador](./src/recon_platform/personas/controladores/personas.py)
+  → [DTO](./src/recon_platform/personas/dto/personas.py) →
+  [AdministrarPersonas](./src/recon_platform/personas/servicios/personas.py)
+  → puertos/dominio → repositorios/modelos/UoW. La escritura y su auditoría se
+  confirman juntas; registrar administrativamente no completa el CU-03 biométrico.
+- Login: [autenticación](./src/recon_platform/identidad/controladores/autenticacion.py)
+  → seguridad/composición → [GestionSesiones](./src/recon_platform/identidad/servicios/sesiones.py)
+  y [cuentas](./src/recon_platform/identidad/servicios/cuentas.py). Se conservan
+  las fases de verificación de credenciales y rotación de sesión existentes.
+- Manual: [controlador de Eventos](./src/recon_platform/accesos/controladores/eventos.py)
+  → DTO/composición → [RegistrarEventoManual](./src/recon_platform/accesos/servicios/eventos.py)
+  → repositorios/UoW. Se conservan inicio limpio, revalidación, coordinación por
+  Persona, idempotencia, jornada Bogotá, auditoría y respuestas 201/200.
+
+Se conservan las proyecciones de consultas de Eventos en su
+[repositorio](./src/recon_platform/accesos/infraestructura/repositorios_eventos.py),
+incluida la minimización de OPERADOR. También se conserva la obtención interna
+del contexto de fallo de modo en el controlador de Dispositivos. Esos
+acoplamientos quedan documentados; no se rediseñaron en 0009. No se añadieron
+servicios delegadores, tablas, dependencias, frontend o integración facial/Edge.
+
+### Rutas históricas del corte 2180476
+
+Los orígenes retirados se relacionan abajo con las rutas canónicas. Los enlaces
+históricos de los manifiestos frontend 0008 se conservan como evidencia del
+corte original; algunos dejaron de resolver sobre este checkout. Esta tabla
+permite localizar el código actual, sin afirmar que aquellos enlaces siguen
+navegables. El contenido original puede consultarse con Git de lectura.
+
+| Origen hist?rico bajo `src/recon_platform` | Destino can?nico bajo el mismo directorio |
+|---|---|
+| `accesos/api.py` | [accesos/controladores/puntos.py](./src/recon_platform/accesos/controladores/puntos.py); [accesos/dto/puntos.py](./src/recon_platform/accesos/dto/puntos.py) |
+| `accesos/aplicacion.py` | [accesos/puertos/puntos.py](./src/recon_platform/accesos/puertos/puntos.py); [accesos/servicios/puntos.py](./src/recon_platform/accesos/servicios/puntos.py) |
+| `accesos/dominio.py` | [accesos/dominio/punto_acceso.py](./src/recon_platform/accesos/dominio/punto_acceso.py) |
+| `accesos/eventos_api.py` | [accesos/controladores/eventos.py](./src/recon_platform/accesos/controladores/eventos.py); [accesos/dto/eventos.py](./src/recon_platform/accesos/dto/eventos.py); [composicion.py](./src/recon_platform/composicion.py) |
+| `accesos/eventos_aplicacion.py` | [accesos/puertos/eventos.py](./src/recon_platform/accesos/puertos/eventos.py); [accesos/servicios/eventos.py](./src/recon_platform/accesos/servicios/eventos.py) |
+| `accesos/eventos_dominio.py` | [accesos/dominio/evento_acceso.py](./src/recon_platform/accesos/dominio/evento_acceso.py) |
+| `accesos/eventos_infraestructura.py` | [accesos/infraestructura/modelos_eventos.py](./src/recon_platform/accesos/infraestructura/modelos_eventos.py); [accesos/infraestructura/repositorios_eventos.py](./src/recon_platform/accesos/infraestructura/repositorios_eventos.py); [accesos/infraestructura/unidad_trabajo_eventos.py](./src/recon_platform/accesos/infraestructura/unidad_trabajo_eventos.py) |
+| `accesos/infraestructura.py` | [accesos/infraestructura/modelos_puntos.py](./src/recon_platform/accesos/infraestructura/modelos_puntos.py); [accesos/infraestructura/repositorios_puntos.py](./src/recon_platform/accesos/infraestructura/repositorios_puntos.py) |
+| `auditoria/api.py` | [auditoria/controladores/eventos.py](./src/recon_platform/auditoria/controladores/eventos.py); [auditoria/dto/eventos.py](./src/recon_platform/auditoria/dto/eventos.py) |
+| `auditoria/aplicacion.py` | [auditoria/puertos/eventos.py](./src/recon_platform/auditoria/puertos/eventos.py); [auditoria/servicios/eventos.py](./src/recon_platform/auditoria/servicios/eventos.py) |
+| `auditoria/dominio.py` | [auditoria/dominio/evento_auditoria.py](./src/recon_platform/auditoria/dominio/evento_auditoria.py) |
+| `auditoria/infraestructura.py` | [auditoria/infraestructura/modelos.py](./src/recon_platform/auditoria/infraestructura/modelos.py); [auditoria/infraestructura/repositorios.py](./src/recon_platform/auditoria/infraestructura/repositorios.py); [auditoria/infraestructura/unidad_trabajo.py](./src/recon_platform/auditoria/infraestructura/unidad_trabajo.py) |
+| `composicion_administrativa.py` | [composicion.py](./src/recon_platform/composicion.py) |
+| `http_administrativo.py` | [http/administrativo.py](./src/recon_platform/http/administrativo.py) |
+| `identidad/administracion_api.py` | [composicion.py](./src/recon_platform/composicion.py); [identidad/controladores/usuarios.py](./src/recon_platform/identidad/controladores/usuarios.py); [identidad/dto/usuarios.py](./src/recon_platform/identidad/dto/usuarios.py) |
+| `identidad/api.py` | [composicion.py](./src/recon_platform/composicion.py); [identidad/controladores/autenticacion.py](./src/recon_platform/identidad/controladores/autenticacion.py); [identidad/controladores/seguridad.py](./src/recon_platform/identidad/controladores/seguridad.py); [identidad/dto/autenticacion.py](./src/recon_platform/identidad/dto/autenticacion.py) |
+| `identidad/aplicacion/casos_de_uso.py` | [identidad/servicios/cuentas.py](./src/recon_platform/identidad/servicios/cuentas.py) |
+| `identidad/aplicacion/limitador.py` | [identidad/servicios/limitador.py](./src/recon_platform/identidad/servicios/limitador.py) |
+| `identidad/aplicacion/puertos.py` | [identidad/puertos/cuentas.py](./src/recon_platform/identidad/puertos/cuentas.py) |
+| `identidad/aplicacion/sesiones.py` | [identidad/puertos/sesiones.py](./src/recon_platform/identidad/puertos/sesiones.py); [identidad/servicios/sesiones.py](./src/recon_platform/identidad/servicios/sesiones.py) |
+| `identidad/infraestructura/sesiones.py` | [identidad/infraestructura/repositorios_sesiones.py](./src/recon_platform/identidad/infraestructura/repositorios_sesiones.py) |
+| `integracion_edge/api.py` | [integracion_edge/controladores/dispositivos.py](./src/recon_platform/integracion_edge/controladores/dispositivos.py); [integracion_edge/dto/dispositivos.py](./src/recon_platform/integracion_edge/dto/dispositivos.py) |
+| `integracion_edge/aplicacion.py` | [integracion_edge/puertos/dispositivos.py](./src/recon_platform/integracion_edge/puertos/dispositivos.py); [integracion_edge/servicios/dispositivos.py](./src/recon_platform/integracion_edge/servicios/dispositivos.py) |
+| `integracion_edge/dominio.py` | [integracion_edge/dominio/dispositivo_edge.py](./src/recon_platform/integracion_edge/dominio/dispositivo_edge.py) |
+| `integracion_edge/infraestructura.py` | [integracion_edge/infraestructura/modelos.py](./src/recon_platform/integracion_edge/infraestructura/modelos.py); [integracion_edge/infraestructura/repositorios.py](./src/recon_platform/integracion_edge/infraestructura/repositorios.py) |
+| `personas/api.py` | [composicion.py](./src/recon_platform/composicion.py); [personas/controladores/personas.py](./src/recon_platform/personas/controladores/personas.py); [personas/dto/personas.py](./src/recon_platform/personas/dto/personas.py) |
+| `personas/aplicacion/casos_de_uso.py` | [personas/servicios/personas.py](./src/recon_platform/personas/servicios/personas.py) |
+| `personas/aplicacion/puertos.py` | [personas/puertos/personas.py](./src/recon_platform/personas/puertos/personas.py) |
+| `identidad/aplicacion/__init__.py`, `personas/aplicacion/__init__.py` | Retirados al quedar sin consumidores; servicios y puertos tienen paquetes propios. |
+
 ## Alcance implementado
 
 La fábrica Flask conserva la ruta temporal `/_diagnostico`. El módulo Personas

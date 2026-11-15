@@ -2,6 +2,7 @@
 
 import os
 from collections.abc import Iterator
+from typing import NoReturn
 
 import pytest
 from flask import Flask
@@ -13,7 +14,7 @@ from recon_platform import create_app
 from recon_platform.extensions import db
 
 
-def _detener(motivo: str) -> None:
+def _detener(motivo: str) -> NoReturn:
     pytest.exit(motivo, returncode=2)
 
 
@@ -38,8 +39,7 @@ def _validar_conexion(conexion: Connection) -> None:
         versiones = conexion.execute(
             text("SELECT version_num FROM alembic_version")
         ).scalars().all()
-        motores = dict(
-            conexion.execute(
+        motores = {clave: valor for clave, valor in conexion.execute(
                 text(
                     "SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES "
                     "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN "
@@ -48,8 +48,7 @@ def _validar_conexion(conexion: Connection) -> None:
                     "'auditoria_personas', 'punto_acceso', 'dispositivo_edge', "
                     "'evento_auditoria', 'evento_acceso')"
                 )
-            ).all()
-        )
+            ).all()}
         lectura = identidad, versiones, motores
     except Exception:
         pass  # El error del controlador podría contener datos de conexión.

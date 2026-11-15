@@ -8,18 +8,23 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
-from recon_platform.accesos.aplicacion import AdministrarPuntos
-from recon_platform.accesos.dominio import PuntoAcceso
-from recon_platform.accesos.infraestructura import PuntoAccesoModelo, RepositorioPuntosSQLAlchemy
-from recon_platform.auditoria.infraestructura import EventoAuditoriaModelo, RepositorioEventosSQLAlchemy, UnidadTrabajoSQLAlchemy
-from recon_platform.identidad.aplicacion.casos_de_uso import BootstrapSuperadmin
+from recon_platform.accesos.servicios.puntos import AdministrarPuntos
+from recon_platform.accesos.dominio.punto_acceso import PuntoAcceso
+from recon_platform.accesos.infraestructura.modelos_puntos import PuntoAccesoModelo
+from recon_platform.accesos.infraestructura.repositorios_puntos import RepositorioPuntosSQLAlchemy
+from recon_platform.auditoria.infraestructura.modelos import EventoAuditoriaModelo
+from recon_platform.auditoria.infraestructura.repositorios import RepositorioEventosSQLAlchemy
+from recon_platform.auditoria.infraestructura.unidad_trabajo import UnidadTrabajoSQLAlchemy
+from recon_platform.identidad.servicios.cuentas import BootstrapSuperadmin
 from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
 from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
-from recon_platform.integracion_edge.aplicacion import AdministrarDispositivos
-from recon_platform.integracion_edge.dominio import DispositivoEdge
-from recon_platform.integracion_edge.infraestructura import (
-    ConsultaPuntosSQLAlchemy, DispositivoEdgeModelo, RepositorioDispositivosSQLAlchemy,
+from recon_platform.integracion_edge.servicios.dispositivos import AdministrarDispositivos
+from recon_platform.integracion_edge.dominio.dispositivo_edge import DispositivoEdge
+from recon_platform.integracion_edge.infraestructura.repositorios import (
+    ConsultaPuntosSQLAlchemy,
+    RepositorioDispositivosSQLAlchemy,
 )
+from recon_platform.integracion_edge.infraestructura.modelos import DispositivoEdgeModelo
 
 pytestmark = pytest.mark.mysql_integration
 
@@ -86,6 +91,7 @@ def test_crud_auditoria_y_relacion_mysql(sesion_0005: Session):
     actor = BootstrapSuperadmin(RepositorioIAMSQLAlchemy(sesion_0005),
         UnidadTrabajoIAMSQLAlchemy(sesion_0005)).ejecutar(
             login="superadmin.prueba.0005", contrasena="Clave-Ficticia-Prueba-0005!").usuario
+    assert actor.id_usuario is not None
     auditoria = RepositorioEventosSQLAlchemy(sesion_0005)
     unidad = UnidadTrabajoSQLAlchemy(sesion_0005)
     puntos = AdministrarPuntos(RepositorioPuntosSQLAlchemy(sesion_0005), auditoria, unidad)
@@ -93,9 +99,11 @@ def test_crud_auditoria_y_relacion_mysql(sesion_0005: Session):
         ConsultaPuntosSQLAlchemy(sesion_0005), auditoria, unidad)
     punto = puntos.crear(actor_id=actor.id_usuario, rol="SUPERADMIN",
                          punto=PuntoAcceso(codigo="MYSQL-P-0005", nombre="Punto ficticio"))
+    assert punto.id_punto_acceso is not None
     dispositivo = dispositivos.crear(actor_id=actor.id_usuario, rol="SUPERADMIN",
         dispositivo=DispositivoEdge(id_punto_acceso=punto.id_punto_acceso,
             codigo="MYSQL-D-0005", nombre="Nodo ficticio", modo_operacion="AUTOMATICO"))
+    assert dispositivo.id_dispositivo is not None
     actualizado = dispositivos.cambiar_modo(actor_id=actor.id_usuario, rol="SUPERADMIN",
                                              id_dispositivo=dispositivo.id_dispositivo, modo="ENTRADA")
     assert actualizado.modo_operacion == "ENTRADA"
@@ -106,7 +114,9 @@ def test_crud_auditoria_y_relacion_mysql(sesion_0005: Session):
     assert [e.accion for e in eventos] == ["CREAR_PUNTO_ACCESO", "CREAR_DISPOSITIVO_EDGE",
                                            "CAMBIAR_MODO_DISPOSITIVO"]
     assert all(e.id_usuario_actor == actor.id_usuario and e.resultado == "EXITOSO" for e in eventos)
-    assert json.loads(eventos[-1].detalle) == {"anterior": "AUTOMATICO", "nuevo": "ENTRADA"}
+    detalle = eventos[-1].detalle
+    assert detalle is not None
+    assert json.loads(detalle) == {"anterior": "AUTOMATICO", "nuevo": "ENTRADA"}
 
 
 def test_unicidad_codigo_punto_mysql(sesion_0005: Session):
@@ -145,6 +155,7 @@ def test_modo_invalido_rechazado_por_mysql(sesion_0005: Session):
         codigo="D-MODO", nombre="Ficticio", modo_operacion="ILEGAL", estado="INACTIVO"))
     with pytest.raises(OperationalError) as error:
         sesion_0005.flush()
+    assert error.value.orig is not None
     assert error.value.orig.args[0] == 3819
     assert "ck_dispositivo_edge_modo" in error.value.orig.args[1]
 
@@ -153,6 +164,7 @@ def test_estado_invalido_rechazado_por_mysql(sesion_0005: Session):
     sesion_0005.add(PuntoAccesoModelo(codigo="P-ESTADO", nombre="Ficticio", estado="ILEGAL"))
     with pytest.raises(OperationalError) as error:
         sesion_0005.flush()
+    assert error.value.orig is not None
     assert error.value.orig.args[0] == 3819
     assert "ck_punto_acceso_estado" in error.value.orig.args[1]
 
@@ -162,6 +174,7 @@ def test_actor_usuario_requiere_fk_y_id_mysql(sesion_0005: Session):
         accion="PRUEBA_FICTICIA", resultado="FALLIDO"))
     with pytest.raises(OperationalError) as error:
         sesion_0005.flush()
+    assert error.value.orig is not None
     assert error.value.orig.args[0] == 3819
     assert "ck_evento_auditoria_actor" in error.value.orig.args[1]
 
@@ -170,6 +183,7 @@ def test_fallo_auditoria_revierte_punto_mysql(sesion_0005: Session, monkeypatch)
     actor = BootstrapSuperadmin(RepositorioIAMSQLAlchemy(sesion_0005),
         UnidadTrabajoIAMSQLAlchemy(sesion_0005)).ejecutar(
             login="superadmin.rollback.0005", contrasena="Clave-Ficticia-Prueba-0005!").usuario
+    assert actor.id_usuario is not None
     def fallar(*_args, **_kwargs):
         raise RuntimeError("Fallo ficticio de auditoría")
     auditoria = RepositorioEventosSQLAlchemy(sesion_0005)

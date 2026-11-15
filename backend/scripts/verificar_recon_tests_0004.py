@@ -66,10 +66,10 @@ def validar_0004(conexion: Connection) -> None:
         "fk_auditoria_personas_actor": (["actor_id"], "usuario_plataforma", ["id_usuario"]),
         "fk_auditoria_personas_persona": (["id_persona"], "persona", ["id_persona"]),
     }, "Las FK de auditoria_personas no coinciden con 0004.")
-    borrados = dict(conexion.execute(text(
+    borrados = {clave: valor for clave, valor in conexion.execute(text(
         "SELECT CONSTRAINT_NAME, DELETE_RULE FROM information_schema.REFERENTIAL_CONSTRAINTS "
         "WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'auditoria_personas'"
-    )).all())
+    )).all()}
     _exigir(borrados == {nombre: "RESTRICT" for nombre in relaciones},
             "La política de borrado de auditoria_personas no coincide con 0004.")
     indices = {indice["name"]: indice["column_names"]
@@ -105,16 +105,19 @@ def verificar(etapa: str) -> None:
                  "DB_TEST_USER", "DB_TEST_PASSWORD")
     _exigir(all(os.getenv(nombre) for nombre in requeridas),
             "Falta configuración explícita de MySQL de pruebas.")
-    url = make_url(obtener_uri_mysql(pruebas=True))
+    uri = obtener_uri_mysql(pruebas=True)
+    if uri is None:
+        raise VerificacionFallida("Falta configuración explícita de MySQL de pruebas.")
+    url = make_url(uri)
     validar_destino(url)
     motor = create_engine(url, poolclass=NullPool)
     try:
         with motor.connect() as conexion:
             _identidad(conexion)
-            tablas = dict(conexion.execute(text(
+            tablas = {clave: valor for clave, valor in conexion.execute(text(
                 "SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES "
                 "WHERE TABLE_SCHEMA = DATABASE()"
-            )).all())
+            )).all()}
             esperadas = TABLAS_0003 if etapa == "antes" else TABLAS_0004
             _exigir(set(tablas) == esperadas and all(valor == "InnoDB" for valor in tablas.values()),
                     "Tablas o motores del esquema inesperados.")

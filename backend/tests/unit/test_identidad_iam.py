@@ -1,17 +1,21 @@
 """Reglas IAM con dobles en memoria; no accede a MySQL."""
 
 from copy import deepcopy
+from typing import cast
 
 import pytest
 
-from recon_platform.identidad.aplicacion.casos_de_uso import (
+from recon_platform.identidad.servicios.cuentas import (
     AutenticarUsuarioPlataforma,
     BootstrapSuperadmin,
     CambiarEstadoUsuario,
     CambiarLoginUsuario,
     CambiarRolUsuario,
     CrearUsuarioPlataforma,
+    ConsultarUsuarioPlataforma,
     ConflictoIntegridadIAM,
+    ListarRoles,
+    ListarUsuariosPlataforma,
     PermisoDenegado,
     RestablecerContrasenaUsuario,
     RolNoExiste,
@@ -57,6 +61,13 @@ class RepositorioMemoria:
             self.bloqueos += 1
         return self.roles.get(nombre)
 
+    def listar_roles(self) -> list[Rol]:
+        return list(self.roles.values())
+
+    def listar_usuarios(self, *, limite: int, desplazamiento: int) -> list[UsuarioPlataforma]:
+        identificadores = sorted(self.usuarios)[desplazamiento:desplazamiento + limite]
+        return [self.usuarios[identificador] for identificador in identificadores]
+
     def obtener_superadmin(self) -> UsuarioPlataforma | None:
         cuentas = [
             u for u in self.usuarios.values() if u.rol.nombre == "SUPERADMIN"
@@ -81,6 +92,7 @@ class RepositorioMemoria:
         return usuario
 
     def actualizar(self, usuario: UsuarioPlataforma) -> UsuarioPlataforma:
+        assert usuario.id_usuario is not None
         self.usuarios[usuario.id_usuario] = usuario
         return usuario
 
@@ -160,7 +172,8 @@ def test_login_normalizado_y_roles_controlados() -> None:
     with pytest.raises(ValueError, match="Rol válido"):
         UsuarioPlataforma(
             login="sin.rol", hash_contrasena=generar_hash_contrasena(CLAVE_FICTICIA),
-            rol=None,
+            # None es deliberado; cast conserva la entrada inválida en ejecución.
+            rol=cast(Rol, None),
         )
     with pytest.raises(ValueError, match="hash"):
         UsuarioPlataforma(
@@ -200,6 +213,7 @@ def test_bootstrap_explicito_es_idempotente_y_auditado(
     iam: tuple[RepositorioMemoria, UnidadMemoria, UsuarioPlataforma],
 ) -> None:
     repositorio, unidad, inicial = iam
+    assert inicial.id_usuario is not None
     segundo = BootstrapSuperadmin(repositorio, unidad).ejecutar(
         login="otro.superadmin", contrasena=""
     )
@@ -283,10 +297,12 @@ def test_superadmin_crea_cuenta_sin_persona_y_autentica(
     iam: tuple[RepositorioMemoria, UnidadMemoria, UsuarioPlataforma],
 ) -> None:
     repositorio, unidad, inicial = iam
+    assert inicial.id_usuario is not None
     cuenta = CrearUsuarioPlataforma(repositorio, unidad).ejecutar(
         actor_id=inicial.id_usuario, login=" Operador.Prueba ",
         contrasena=CLAVE_FICTICIA, rol_nombre="OPERADOR",
     )
+    assert cuenta.id_usuario is not None
     assert cuenta.login == "operador.prueba"
     assert not hasattr(cuenta, "id_persona")
     assert cuenta.rol.nombre == "OPERADOR"
@@ -294,6 +310,7 @@ def test_superadmin_crea_cuenta_sin_persona_y_autentica(
     autenticada = AutenticarUsuarioPlataforma(repositorio, unidad).ejecutar(
         login="OPERADOR.PRUEBA", contrasena=CLAVE_FICTICIA
     )
+    assert autenticada is not None
     assert autenticada.id_usuario == cuenta.id_usuario
     assert autenticada.rol_nombre == "OPERADOR"
     assert not hasattr(autenticada, "hash_contrasena")
@@ -308,10 +325,12 @@ def test_otros_roles_no_administran_cuentas(
     iam: tuple[RepositorioMemoria, UnidadMemoria, UsuarioPlataforma], rol_actor: str
 ) -> None:
     repositorio, unidad, inicial = iam
+    assert inicial.id_usuario is not None
     actor = CrearUsuarioPlataforma(repositorio, unidad).ejecutar(
         actor_id=inicial.id_usuario, login=f"actor.{rol_actor.lower()}",
         contrasena=CLAVE_FICTICIA, rol_nombre=rol_actor,
     )
+    assert actor.id_usuario is not None
     with pytest.raises(PermisoDenegado):
         CrearUsuarioPlataforma(repositorio, unidad).ejecutar(
             actor_id=actor.id_usuario, login="nuevo.usuario",
@@ -344,6 +363,7 @@ def test_login_duplicado_y_superadmin_adicional_rechazados(
     iam: tuple[RepositorioMemoria, UnidadMemoria, UsuarioPlataforma],
 ) -> None:
     repositorio, unidad, inicial = iam
+    assert inicial.id_usuario is not None
     crear = CrearUsuarioPlataforma(repositorio, unidad)
     crear.ejecutar(
         actor_id=inicial.id_usuario, login="cuenta.unica",
@@ -366,10 +386,12 @@ def test_cambio_de_rol_conserva_id_y_audita(
     iam: tuple[RepositorioMemoria, UnidadMemoria, UsuarioPlataforma],
 ) -> None:
     repositorio, unidad, inicial = iam
+    assert inicial.id_usuario is not None
     cuenta = CrearUsuarioPlataforma(repositorio, unidad).ejecutar(
         actor_id=inicial.id_usuario, login="cuenta.rol",
         contrasena=CLAVE_FICTICIA, rol_nombre="OPERADOR",
     )
+    assert cuenta.id_usuario is not None
     actualizado = CambiarRolUsuario(repositorio, unidad).ejecutar(
         actor_id=inicial.id_usuario, usuario_id=cuenta.id_usuario,
         rol_nombre="ADMINISTRADOR",
@@ -389,10 +411,12 @@ def test_estado_login_y_clave_cambian_solo_por_superadmin(
     iam: tuple[RepositorioMemoria, UnidadMemoria, UsuarioPlataforma],
 ) -> None:
     repositorio, unidad, inicial = iam
+    assert inicial.id_usuario is not None
     cuenta = CrearUsuarioPlataforma(repositorio, unidad).ejecutar(
         actor_id=inicial.id_usuario, login="cuenta.cambio",
         contrasena=CLAVE_FICTICIA, rol_nombre="OPERADOR",
     )
+    assert cuenta.id_usuario is not None
     CambiarLoginUsuario(repositorio, unidad).ejecutar(
         actor_id=inicial.id_usuario, usuario_id=cuenta.id_usuario,
         login="cuenta.nueva",
@@ -405,7 +429,9 @@ def test_estado_login_y_clave_cambian_solo_por_superadmin(
         actor_id=inicial.id_usuario, usuario_id=cuenta.id_usuario,
         estado="INACTIVO",
     )
-    assert cuenta.id_usuario == repositorio.obtener_por_login("cuenta.nueva").id_usuario
+    encontrada = repositorio.obtener_por_login("cuenta.nueva")
+    assert encontrada is not None
+    assert cuenta.id_usuario == encontrada.id_usuario
     assert not AutenticarUsuarioPlataforma(repositorio, unidad).ejecutar(
         login="cuenta.nueva", contrasena=OTRA_CLAVE_FICTICIA
     )
@@ -420,6 +446,7 @@ def test_superadmin_inicial_no_puede_desactivarse_ni_cambiar_rol(
     iam: tuple[RepositorioMemoria, UnidadMemoria, UsuarioPlataforma],
 ) -> None:
     repositorio, unidad, inicial = iam
+    assert inicial.id_usuario is not None
     with pytest.raises(PermisoDenegado):
         CambiarEstadoUsuario(repositorio, unidad).ejecutar(
             actor_id=inicial.id_usuario, usuario_id=inicial.id_usuario,
@@ -430,13 +457,41 @@ def test_superadmin_inicial_no_puede_desactivarse_ni_cambiar_rol(
             actor_id=inicial.id_usuario, usuario_id=inicial.id_usuario,
             rol_nombre="OPERADOR",
         )
-    assert repositorio.obtener_superadmin().estado == "ACTIVO"
+    superadmin = repositorio.obtener_superadmin()
+    assert superadmin is not None
+    assert superadmin.estado == "ACTIVO"
+
+
+def test_consultas_del_doble_iam_respetan_orden_paginacion_y_permisos(iam):
+    repositorio, unidad, inicial = iam
+    assert inicial.id_usuario is not None
+    primera = CrearUsuarioPlataforma(repositorio, unidad).ejecutar(
+        actor_id=inicial.id_usuario, login="cuenta.primera",
+        contrasena=CLAVE_FICTICIA, rol_nombre="OPERADOR",
+    )
+    segunda = CrearUsuarioPlataforma(repositorio, unidad).ejecutar(
+        actor_id=inicial.id_usuario, login="cuenta.segunda",
+        contrasena=CLAVE_FICTICIA, rol_nombre="ADMINISTRADOR",
+    )
+    assert primera.id_usuario is not None and segunda.id_usuario is not None
+    assert [rol.nombre for rol in ListarRoles(repositorio, unidad).ejecutar(
+        actor_id=inicial.id_usuario)] == ["SUPERADMIN", "ADMINISTRADOR", "OPERADOR"]
+    pagina = ListarUsuariosPlataforma(repositorio, unidad).ejecutar(
+        actor_id=inicial.id_usuario, limite=1, desplazamiento=1)
+    assert [cuenta.id_usuario for cuenta in pagina] == [primera.id_usuario]
+    assert ListarUsuariosPlataforma(repositorio, unidad).ejecutar(
+        actor_id=inicial.id_usuario, limite=1, desplazamiento=10) == []
+    assert ConsultarUsuarioPlataforma(repositorio, unidad).ejecutar(
+        actor_id=inicial.id_usuario, usuario_id=segunda.id_usuario).login == segunda.login
+    with pytest.raises(PermisoDenegado):
+        ListarUsuariosPlataforma(repositorio, unidad).ejecutar(actor_id=primera.id_usuario)
 
 
 def test_fallo_de_auditoria_revierte_creacion_y_no_deja_cuenta(
     iam: tuple[RepositorioMemoria, UnidadMemoria, UsuarioPlataforma],
 ) -> None:
     repositorio, unidad, inicial = iam
+    assert inicial.id_usuario is not None
     repositorio.fallar_auditoria = True
     with pytest.raises(RuntimeError, match="auditoría"):
         CrearUsuarioPlataforma(repositorio, unidad).ejecutar(

@@ -100,17 +100,17 @@ def validar_0005(conexion: Connection) -> None:
         actual = {f["name"]: (f["constrained_columns"], f["referred_table"], f["referred_columns"])
                   for f in inspector.get_foreign_keys(tabla)}
         _exigir(actual == esperado, f"FK de {tabla} inesperada.")
-        borrados = dict(conexion.execute(text(
+        borrados = {clave: valor for clave, valor in conexion.execute(text(
             "SELECT CONSTRAINT_NAME, DELETE_RULE FROM information_schema.REFERENTIAL_CONSTRAINTS "
             "WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME=:tabla"
-        ), {"tabla": tabla}).all())
+        ), {"tabla": tabla}).all()}
         _exigir(borrados == {nombre: "RESTRICT" for nombre in esperado},
                 f"Borrado referencial de {tabla} inesperado.")
-    checks = dict(conexion.execute(text(
+    checks = {clave: valor for clave, valor in conexion.execute(text(
         "SELECT tc.CONSTRAINT_NAME, tc.ENFORCED FROM information_schema.TABLE_CONSTRAINTS tc "
         "WHERE tc.TABLE_SCHEMA=DATABASE() AND tc.TABLE_NAME IN "
         "('punto_acceso','dispositivo_edge','evento_auditoria') AND tc.CONSTRAINT_TYPE='CHECK'"
-    )).all())
+    )).all()}
     _exigir(checks == {nombre: "YES" for nombre in {
         "ck_punto_acceso_estado", "ck_dispositivo_edge_estado", "ck_dispositivo_edge_modo",
         "ck_evento_auditoria_tipo_actor", "ck_evento_auditoria_resultado",
@@ -135,15 +135,18 @@ def verificar(etapa: str) -> None:
     _exigir(all(os.getenv(n) for n in ("DB_HOST", "DB_PORT", "DB_NAME", "DB_TEST_NAME",
                                       "DB_TEST_USER", "DB_TEST_PASSWORD")),
             "Falta configuración explícita de recon_tests.")
-    url = make_url(obtener_uri_mysql(pruebas=True))
+    uri = obtener_uri_mysql(pruebas=True)
+    if uri is None:
+        raise VerificacionFallida("Falta configuración explícita de recon_tests.")
+    url = make_url(uri)
     validar_destino(url)
     motor = create_engine(url, poolclass=NullPool)
     try:
         with motor.connect() as conexion:
             _identidad(conexion)
-            tablas = dict(conexion.execute(text(
+            tablas = {clave: valor for clave, valor in conexion.execute(text(
                 "SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()"
-            )).all())
+            )).all()}
             esperadas = TABLAS_0004 | (NUEVAS if etapa == "despues" else set())
             _exigir(set(tablas) == esperadas and all(m == "InnoDB" for m in tablas.values()),
                     "Tablas o motores inesperados.")

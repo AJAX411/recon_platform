@@ -1,116 +1,44 @@
-# Módulo Personas — Proyecto Recon Facial
+# Personas — Proyecto Recon Facial
 
-## 1. Propósito
+La capacidad administra información funcional de Persona dentro del monolito
+modular. La arquitectura y las reglas conservan su estado **PROVISIONAL** según
+el Contexto Maestro v1.7 OFICIAL y las resoluciones aplicables. Persona es
+independiente de UsuarioPlataforma: no existe FK ni vinculación automática.
 
-Este módulo será responsable de la información funcional de
-las personas relacionadas con el reconocimiento facial y
-el control de acceso físico.
+## Organización implementada localmente en 0009
 
-Su diseño se fundamenta en el Contexto Maestro v1.5.
+| Grupo | Código canónico |
+|---|---|
+| Controlador HTTP | [personas](./controladores/personas.py) |
+| DTO de entrada/salida | [validadores y representación](./dto/personas.py) |
+| Servicios/casos de uso | [RegistrarPersona, ConsultarPersona y AdministrarPersonas](./servicios/personas.py) |
+| Puertos | [repositorios y unidad de trabajo](./puertos/personas.py) |
+| Dominio | [Persona](./dominio/persona.py), [TipoPersona](./dominio/tipo_persona.py) |
+| Infraestructura | [modelos](./infraestructura/modelos.py), [repositorios](./infraestructura/repositorios.py), [UoW](./infraestructura/unidad_trabajo.py) |
 
-## 2. Estado arquitectónico
+El controlador usa AdministrarPersonas para conservar permisos y auditoría.
+Los repositorios no confirman por su cuenta; el caso de uso controla la
+transacción completa. La [composición](../composicion.py) construye las
+dependencias con la sesión compartida. La validación DTO conserva las
+diferencias entre forma HTTP, campos nullable y reglas del dominio.
 
-PROVISIONAL.
+Las seis operaciones HTTP existentes requieren SUPERADMIN o ADMINISTRADOR;
+POST y PATCH requieren CSRF. El listado conserva paginación y filtros exactos.
+Las escrituras exitosas registran actor, Persona y fecha UTC en la misma
+transacción. ACTIVO no significa enrolamiento válido ni autorización física.
 
-Se utiliza la arquitectura monolítica modular por capas
-adoptada provisionalmente para la plataforma web.
+## Historia y límites
 
-## 3. Separación de responsabilidades
+Este documento se originó con el baseline v1.5 y la preparación de persistencia
+y API de Personas. Las afirmaciones antiguas sobre migraciones preparadas/no
+aplicadas corresponden a aquellos incrementos. En 0009 no se consultó ninguna
+base real ni se aplicaron migraciones; el [README backend](../../../README.md)
+conserva los resultados históricos reportados y el cruce de rutas retiradas.
+La reorganización local y sus pruebas figuran en el
+[manifiesto 0009](../../../INCREMENTO_0009_ESTRUCTURA_UNIFORME.md).
 
-Persona y UsuarioPlataforma son conceptos diferentes.
-
-- Persona representa al individuo relacionado con el
-  reconocimiento facial y el control de acceso.
-- UsuarioPlataforma representa una cuenta autorizada para
-  utilizar la aplicación web.
-
-La administración de cuentas, sesiones y roles corresponde
-al módulo Identidad.
-
-## 4. Decisiones provisionales relevantes
-
-- Cada Persona tiene un TipoPersona principal actual.
-- Una Persona puede existir sin una cuenta web.
-- La vinculación futura entre Persona y UsuarioPlataforma y su cardinalidad siguen PENDIENTES. El prototipo no crea FK ni vínculo automático.
-- El catálogo inicial TipoPersona sigue el Contexto Maestro v1.5.
-
-Estas decisiones pueden evolucionar mediante el proceso
-formal de arquitectura del proyecto.
-
-## 5. Organización interna
-
-API:
-Recibirá solicitudes HTTP y gestionará la entrada y salida
-de datos según el contrato aprobado.
-
-Aplicación:
-Coordinará los casos de uso y sus transacciones.
-
-Dominio:
-Representará las entidades y reglas de negocio.
-
-Infraestructura:
-Implementará la persistencia y las adaptaciones externas.
-
-El incremento HTTP administrativo incorpora rutas, casos de uso y auditoría
-persistente propios de Personas.
-
-## 6. Capacidades funcionales candidatas
-
-Se analizarán progresivamente:
-
-- Registrar personas.
-- Actualizar información de personas.
-- Desactivar personas.
-- Consultar información de personas.
-
-Su implementación dependerá de los requisitos, casos de uso,
-historias de usuario y criterios de aceptación vigentes.
-
-## 7. Decisiones todavía abiertas
-
-La persistencia inicial se preparó conforme a la resolución puntual
-Registro de Personas y Persistencia MySQL. Continúan abiertos:
-
-- Catálogo definitivo de tipos documentales y reglas avanzadas de formato.
-- Obligatoriedad del identificador institucional para SERVICIOS_GENERALES.
-- Reglas exactas de activación y desactivación más allá del estado inicial.
-- Permisos y contrato HTTP: las reglas de este incremento son PROVISIONALES y
-  requieren revisión independiente antes de su aplicación en MySQL.
-- Relación operativa con el enrolamiento biométrico.
-- Validación de la migración en MySQL; el modelo físico permanece provisional.
-
-No se implementarán reglas ficticias para cerrar los demás puntos.
-
-## API administrativa provisional
-
-`GET /api/v1/personas/tipos`, `GET /api/v1/personas`,
-`GET /api/v1/personas/{id_persona}`, `POST /api/v1/personas`,
-`PATCH /api/v1/personas/{id_persona}` y
-`PATCH /api/v1/personas/{id_persona}/estado` requieren sesión activa y rol
-SUPERADMIN o ADMINISTRADOR. POST y PATCH exigen CSRF. El listado tiene límite
-predeterminado 50, máximo 100, y filtros exactos por documento, identificador,
-TipoPersona y estado. OPERADOR no recibe datos detallados por estas rutas.
-
-Las escrituras registran actor, Persona, operación y fecha UTC en
-`auditoria_personas` dentro de la misma transacción. La migración
-`0004_auditoria_personas` está preparada y **no aplicada** en este incremento.
-La tabla referencia la cuenta actora para integridad de auditoría; no vincula
-Persona con UsuarioPlataforma. El estado ACTIVO/INACTIVO no altera biometría.
-Este incremento no completa CU-03 ni incluye enrolamiento.
-
-Esta auditoría especializada registra solo escrituras humanas exitosas de
-Personas. Es una solución **PROVISIONAL** para este incremento, no la
-implementación física definitiva de `EventoAuditoria` del Contexto Maestro
-v1.5. La entidad lógica general también contempla eventos automáticos con
-actor nullable; su catálogo, retención y modelo físico continúan PENDIENTES.
-
-## 8. Seguridad y biometría
-
-Este módulo no realiza reconocimiento facial.
-
-No se decide aquí el almacenamiento de embeddings,
-imágenes o plantillas biométricas.
-
-Las responsabilidades biométricas deben mantenerse
-separadas de la administración funcional de personas.
+Permanecen pendientes el catálogo documental definitivo, reglas condicionales
+de categorías no resueltas, el vínculo futuro con cuentas y las políticas de
+enrolamiento e integración biométrica. Personas no depende de cámara, Hailo,
+ONNX, fotografías, embeddings ni plantillas. RegistrarPersona no completa por
+sí solo CU-03. El Bloque 3 y la revisión independiente de 0009 son posteriores.

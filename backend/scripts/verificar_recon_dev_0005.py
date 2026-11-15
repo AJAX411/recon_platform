@@ -45,16 +45,17 @@ def verificar(etapa: str, *, guardar: Path | None = None, comparar: Path | None 
             "La verificación posterior exige comparar el estado previo.")
     _exigir(all(os.getenv(n) for n in VARIABLES), "Falta configuración de recon_dev.")
     uri = obtener_uri_mysql(pruebas=False)
-    _exigir(uri is not None, "Falta URI de recon_dev.")
+    if uri is None:
+        raise ValueError("Falta URI de recon_dev.")
     url = make_url(uri)
     validar_destino(url)
     motor = create_engine(url, poolclass=NullPool)
     try:
         with motor.connect() as conexion:
             validar_identidad(conexion)
-            tablas = dict(conexion.execute(text(
+            tablas = {clave: valor for clave, valor in conexion.execute(text(
                 "SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()"
-            )).all())
+            )).all()}
             esperadas = TABLAS_PREVIAS | {"auditoria_personas"} | (NUEVAS if etapa == "despues" else set())
             _exigir(set(tablas) == esperadas and all(m == "InnoDB" for m in tablas.values()),
                     "Tablas o motores inesperados.")

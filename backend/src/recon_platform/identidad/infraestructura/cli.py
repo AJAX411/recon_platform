@@ -5,7 +5,7 @@ from flask import Flask
 from flask.cli import with_appcontext
 
 from recon_platform.extensions import db
-from recon_platform.identidad.aplicacion.casos_de_uso import BootstrapSuperadmin
+from recon_platform.identidad.servicios.cuentas import BootstrapSuperadmin
 from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
 from recon_platform.identidad.infraestructura.unidad_trabajo import (
     UnidadTrabajoIAMSQLAlchemy,

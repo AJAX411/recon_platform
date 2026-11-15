@@ -1,13 +1,14 @@
 """Una confirmación o reversión por caso de uso IAM."""
 
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from flask_sqlalchemy.session import Session as SesionFlask
+from sqlalchemy.orm import Session, scoped_session
 
 from recon_platform.identidad.infraestructura.repositorios import _traducir_integridad
 
 
 class UnidadTrabajoIAMSQLAlchemy:
-    def __init__(self, sesion: Session) -> None:
+    def __init__(self, sesion: Session | scoped_session[SesionFlask]) -> None:
         self.sesion = sesion
 
     def confirmar(self) -> None:

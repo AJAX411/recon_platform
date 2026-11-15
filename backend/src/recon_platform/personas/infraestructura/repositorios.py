@@ -4,12 +4,10 @@ from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from flask_sqlalchemy.session import Session as SesionFlask
+from sqlalchemy.orm import Session, scoped_session
 
-from recon_platform.personas.aplicacion.casos_de_uso import (
-    ConflictoIntegridad,
-    PersonaDuplicada,
-)
+from recon_platform.personas.servicios.personas import ConflictoIntegridad, PersonaDuplicada
 from recon_platform.personas.dominio.persona import Persona
 from recon_platform.personas.dominio.tipo_persona import TipoPersona
 from recon_platform.personas.infraestructura.modelos import (
@@ -32,7 +30,7 @@ def _traducir_integridad(error: IntegrityError) -> ValueError:
 
 
 class RepositorioTiposPersonaSQLAlchemy:
-    def __init__(self, sesion: Session) -> None:
+    def __init__(self, sesion: Session | scoped_session[SesionFlask]) -> None:
         self.sesion = sesion
 
     def obtener_por_nombre(self, nombre: str) -> TipoPersona | None:
@@ -56,7 +54,7 @@ class RepositorioTiposPersonaSQLAlchemy:
 
 
 class RepositorioPersonasSQLAlchemy:
-    def __init__(self, sesion: Session) -> None:
+    def __init__(self, sesion: Session | scoped_session[SesionFlask]) -> None:
         self.sesion = sesion
 
     def existe_documento(self, tipo: str, numero: str, excluir_id: int | None = None) -> bool:
@@ -123,12 +121,15 @@ class RepositorioPersonasSQLAlchemy:
     def actualizar(self, persona: Persona) -> Persona:
         modelo = self.sesion.get(PersonaModelo, persona.id_persona)
         if modelo is None:
-            from recon_platform.personas.aplicacion.casos_de_uso import PersonaNoExiste
+            from recon_platform.personas.servicios.personas import PersonaNoExiste
             raise PersonaNoExiste("La Persona no existe.")
+        tipo_id = persona.tipo_persona.id_tipo_persona
+        if tipo_id is None:
+            raise ConflictoIntegridad("El TipoPersona debe existir antes de actualizar Persona.")
         for nombre in ("primer_nombre", "segundo_nombre", "primer_apellido", "segundo_apellido",
                        "tipo_documento", "numero_documento", "identificador_institucional", "estado"):
             setattr(modelo, nombre, getattr(persona, nombre))
-        modelo.id_tipo_persona = persona.tipo_persona.id_tipo_persona
+        modelo.id_tipo_persona = tipo_id
         modelo.fecha_actualizacion = datetime.now(UTC).replace(tzinfo=None)
         try:
             self.sesion.flush()

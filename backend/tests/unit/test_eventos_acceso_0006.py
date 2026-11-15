@@ -1,23 +1,24 @@
 """Comportamiento funcional y HTTP de 0006 con SQLite efímero."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import func, select
 
-from recon_platform.accesos import eventos_api
-from recon_platform.accesos.eventos_aplicacion import ActorAcceso, RegistrarEventoManual
-from recon_platform.accesos.eventos_dominio import incidencia_secuencia, jornada_utc
-from recon_platform.accesos.eventos_infraestructura import (
-    EventoAccesoModelo, RepositorioEventosSQLAlchemy, UnidadTrabajoEventosSQLAlchemy,
+from recon_platform.accesos.controladores import eventos as eventos_api
+from recon_platform.accesos.servicios.eventos import ActorAcceso, RegistrarEventoManual
+from recon_platform.accesos.dominio.evento_acceso import incidencia_secuencia, jornada_utc
+from recon_platform.accesos.infraestructura.modelos_eventos import EventoAccesoModelo
+from recon_platform.accesos.infraestructura.repositorios_eventos import RepositorioEventosSQLAlchemy
+from recon_platform.accesos.infraestructura.unidad_trabajo_eventos import UnidadTrabajoEventosSQLAlchemy
+from recon_platform.auditoria.infraestructura.modelos import EventoAuditoriaModelo
+from recon_platform.auditoria.infraestructura.repositorios import (
+    RepositorioEventosSQLAlchemy as RepositorioAuditoria,
 )
-from recon_platform.auditoria.infraestructura import (
-    EventoAuditoriaModelo, RepositorioEventosSQLAlchemy as RepositorioAuditoria,
-)
-from recon_platform.accesos.infraestructura import PuntoAccesoModelo
+from recon_platform.accesos.infraestructura.modelos_puntos import PuntoAccesoModelo
 from recon_platform.extensions import db
-from recon_platform.identidad.aplicacion.casos_de_uso import CrearUsuarioPlataforma
+from recon_platform.identidad.servicios.cuentas import CrearUsuarioPlataforma
 from recon_platform.identidad.infraestructura.modelos import UsuarioPlataformaModelo
 from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
 from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
@@ -125,8 +126,12 @@ def test_reintento_tras_cambio_de_estado_y_clave_de_otro_actor(escenario):
     primera = _registrar(operador, headers, personas[0], punto, clave=clave)
     assert primera.status_code == 201
     with app.app_context():
-        db.session.get(PersonaModelo, personas[0]).estado = "INACTIVO"
-        db.session.get(PuntoAccesoModelo, punto).estado = "INACTIVO"
+        persona = db.session.get(PersonaModelo, personas[0])
+        assert persona is not None
+        persona.estado = "INACTIVO"
+        punto_modelo = db.session.get(PuntoAccesoModelo, punto)
+        assert punto_modelo is not None
+        punto_modelo.estado = "INACTIVO"
         db.session.commit()
     repetida = _registrar(operador, headers, personas[0], punto, clave=clave)
     assert repetida.status_code == 200 and repetida.json == primera.json
@@ -144,7 +149,9 @@ def test_reintento_tras_cambio_de_estado_y_clave_de_otro_actor(escenario):
         assert db.session.scalar(select(func.count()).select_from(EventoAuditoriaModelo).where(
             EventoAuditoriaModelo.accion == "REGISTRAR_EVENTO_ACCESO_MANUAL",
             EventoAuditoriaModelo.resultado == "EXITOSO")) == 1
-        db.session.get(UsuarioPlataformaModelo, operador_id).estado = "INACTIVO"
+        operador_modelo = db.session.get(UsuarioPlataformaModelo, operador_id)
+        assert operador_modelo is not None
+        operador_modelo.estado = "INACTIVO"
         db.session.commit()
     assert _registrar(operador, headers, personas[0], punto, clave=clave).status_code == 401
 
@@ -251,6 +258,45 @@ def test_fallo_auditoria_revierte_evento_y_clave_reutilizable(escenario, monkeyp
     assert _conteo(app, EventoAccesoModelo) == 0
     monkeypatch.setattr(RepositorioAuditoria, "agregar", original)
     assert _registrar(cliente, headers, personas[0], punto, clave=clave).status_code == 201
+
+
+def test_clave_ausente_conserva_400_y_no_reserva_evento(escenario):
+    app, _, _, personas, punto, _, _, _ = escenario
+    cliente, headers = _cliente(app)
+    cuerpo = {"id_persona": personas[0], "id_punto_acceso": punto, "tipo_movimiento": "ENTRADA"}
+    rechazada = cliente.post(BASE + "/manual", json=cuerpo, headers=headers)
+    assert rechazada.status_code == 400
+    assert rechazada.json == {"error": "Los datos no son válidos."}
+    assert "Idempotent-Replay" not in rechazada.headers
+    assert _conteo(app, EventoAccesoModelo) == 0
+    with app.app_context():
+        fallos = db.session.scalars(select(EventoAuditoriaModelo).where(
+            EventoAuditoriaModelo.accion == "REGISTRAR_EVENTO_ACCESO_MANUAL")).all()
+        assert len(fallos) == 1 and fallos[0].resultado == "FALLIDO"
+        assert fallos[0].detalle == "DATOS_INVALIDOS"
+    clave = str(uuid4())
+    nueva = _registrar(cliente, headers, personas[0], punto, clave=clave)
+    repetida = _registrar(cliente, headers, personas[0], punto, clave=clave)
+    assert nueva.status_code == 201 and repetida.status_code == 200
+    assert repetida.json == nueva.json and repetida.headers["Idempotent-Replay"] == "true"
+
+
+def test_filtros_convertidos_conservan_inicio_inclusivo_y_fin_exclusivo(escenario):
+    app, _, reloj, personas, punto, _, _, _ = escenario
+    cliente, headers = _cliente(app)
+    creada = _registrar(cliente, headers, personas[0], punto)
+    assert creada.status_code == 201
+    instante = reloj[0]
+    filtros = {"id_persona": str(personas[0]), "id_punto_acceso": str(punto),
+               "desde": instante.isoformat(), "hasta": (instante + timedelta(seconds=1)).isoformat()}
+    incluida = cliente.get(BASE + "/historial", query_string=filtros)
+    assert incluida.status_code == 200
+    assert [e["id_evento_acceso"] for e in incluida.json["eventos"]] == [creada.json["id_evento_acceso"]]
+    filtros.update(desde=(instante - timedelta(seconds=1)).isoformat(), hasta=instante.isoformat())
+    excluida = cliente.get(BASE + "/historial", query_string=filtros)
+    assert excluida.status_code == 200 and excluida.json["eventos"] == []
+    filtros["desde"] = instante.isoformat()
+    assert cliente.get(BASE + "/historial", query_string=filtros).status_code == 400
 
 
 def test_caso_de_uso_revalida_rol_actual_sin_confiar_en_actor_de_entrada(escenario):

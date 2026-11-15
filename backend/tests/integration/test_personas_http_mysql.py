@@ -7,10 +7,10 @@ from sqlalchemy import inspect, select, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
-from recon_platform.identidad.aplicacion.casos_de_uso import BootstrapSuperadmin
+from recon_platform.identidad.servicios.cuentas import BootstrapSuperadmin
 from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
 from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
-from recon_platform.personas.aplicacion.casos_de_uso import ActorPersonas, AdministrarPersonas, PersonaDuplicada
+from recon_platform.personas.servicios.personas import ActorPersonas, AdministrarPersonas, PersonaDuplicada
 from recon_platform.personas.dominio.persona import Persona
 from recon_platform.personas.dominio.tipo_persona import TipoPersona
 from recon_platform.personas.infraestructura.modelos import AuditoriaPersonasModelo, PersonaModelo
@@ -92,10 +92,12 @@ def test_crud_auditoria_y_unicidades_mysql(sesion_0004: Session) -> None:
         RepositorioIAMSQLAlchemy(sesion_0004), UnidadTrabajoIAMSQLAlchemy(sesion_0004)
     ).ejecutar(login=f"personas.{uuid4().hex[:20]}",
               contrasena="Clave-Ficticia-Prueba-2026!").usuario
+    assert actor_iam.id_usuario is not None
     actor = ActorPersonas(actor_iam.id_usuario, "SUPERADMIN")
     caso = _caso(sesion_0004)
     primera = caso.registrar(actor=actor, persona=_persona(uuid4().hex[:20], identificador="TEST-"+uuid4().hex[:20]))
     segunda = caso.registrar(actor=actor, persona=_persona(uuid4().hex[:20], identificador="TEST-"+uuid4().hex[:20]))
+    assert segunda.id_persona is not None
     with pytest.raises(PersonaDuplicada):
         caso.actualizar(actor=actor, id_persona=segunda.id_persona,
                         datos={"identificador_institucional": primera.identificador_institucional})
@@ -121,6 +123,7 @@ def test_fallo_auditoria_revierte_registro_mysql(sesion_0004: Session) -> None:
         RepositorioIAMSQLAlchemy(sesion_0004), UnidadTrabajoIAMSQLAlchemy(sesion_0004)
     ).ejecutar(login=f"personas.{uuid4().hex[:20]}",
               contrasena="Clave-Ficticia-Prueba-2026!").usuario
+    assert actor_iam.id_usuario is not None
     actor = ActorPersonas(actor_iam.id_usuario, "SUPERADMIN")
     class RepositorioConFallo(RepositorioPersonasSQLAlchemy):
         def auditar(self, **_kwargs):

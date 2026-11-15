@@ -12,11 +12,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from recon_platform.personas.aplicacion.casos_de_uso import (
-    ConsultarPersona,
-    PersonaDuplicada,
-    RegistrarPersona,
-)
+from recon_platform.personas.servicios.personas import ConsultarPersona, PersonaDuplicada, RegistrarPersona
 from recon_platform.personas.dominio.persona import Persona
 from recon_platform.personas.dominio.tipo_persona import TipoPersona
 from recon_platform.personas.infraestructura.modelos import (
@@ -154,6 +150,8 @@ def test_registrar_y_consultar_persona_ficticia(sesion_mysql: Session) -> None:
     )
     assert registrada.id_persona is not None
     assert registrada.estado == "ACTIVO"
+    assert registrada.fecha_creacion is not None
+    assert registrada.fecha_actualizacion is not None
     assert registrada.fecha_creacion.tzinfo == UTC
     assert registrada.fecha_actualizacion.tzinfo == UTC
 
@@ -177,6 +175,7 @@ def test_caso_de_uso_rechaza_duplicados(
         _persona(nombre_tipo="ESTUDIANTE", documento=documento,
                  identificador=identificador)
     )
+    assert original.id_persona is not None
     candidato = _persona(
         nombre_tipo="ESTUDIANTE",
         documento=documento if duplicado == "documento" else _codigo(),
@@ -200,6 +199,7 @@ def test_mysql_impide_duplicados_aun_sin_validacion_de_aplicacion(
         _persona(nombre_tipo="ESTUDIANTE", documento=documento,
                  identificador=identificador)
     )
+    assert original.id_persona is not None
     sesion_mysql.add(PersonaModelo(
         id_tipo_persona=original.tipo_persona.id_tipo_persona,
         primer_nombre="Otra",
@@ -238,6 +238,7 @@ def test_dos_visitantes_sin_identificador_y_fk_valida(sesion_mysql: Session) -> 
 
 def test_mysql_rechaza_tipo_persona_inexistente(sesion_mysql: Session) -> None:
     maximo = sesion_mysql.scalar(select(func.max(TipoPersonaModelo.id_tipo_persona)))
+    assert maximo is not None
     documento = _codigo()
     sesion_mysql.add(PersonaModelo(
         id_tipo_persona=maximo + 1000,

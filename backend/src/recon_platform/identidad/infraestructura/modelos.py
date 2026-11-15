@@ -1,6 +1,7 @@
 """Persistencia inicial de Rol, UsuarioPlataforma y auditoría IAM."""
 
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.dialects import mysql
@@ -16,6 +17,19 @@ def _ahora_utc() -> datetime:
 
 
 class RolModelo(db.Model):
+    if TYPE_CHECKING:
+        from typing import ClassVar
+        from sqlalchemy import Table
+
+        __table__: ClassVar[Table]
+
+        def __init__(
+            self,
+            *,
+            id_rol: int | None = None,
+            nombre: str | None = None,
+        ) -> None: ...
+
     __tablename__ = "rol"
     __table_args__ = (
         UniqueConstraint("nombre", name="uq_rol_nombre"),
@@ -30,6 +44,25 @@ class RolModelo(db.Model):
 
 
 class UsuarioPlataformaModelo(db.Model):
+    if TYPE_CHECKING:
+        from typing import ClassVar
+        from sqlalchemy import Table
+
+        __table__: ClassVar[Table]
+
+        def __init__(
+            self,
+            *,
+            id_usuario: int | None = None,
+            login: str | None = None,
+            hash_contrasena: str | None = None,
+            id_rol: int | None = None,
+            estado: str | None = None,
+            fecha_creacion: datetime | None = None,
+            fecha_actualizacion: datetime | None = None,
+            rol: RolModelo | None = None,
+        ) -> None: ...
+
     __tablename__ = "usuario_plataforma"
     __table_args__ = (
         UniqueConstraint("login", name="uq_usuario_plataforma_login"),
@@ -61,6 +94,25 @@ class UsuarioPlataformaModelo(db.Model):
 
 
 class AuditoriaIAMModelo(db.Model):
+    if TYPE_CHECKING:
+        from typing import ClassVar
+        from sqlalchemy import Table
+
+        __table__: ClassVar[Table]
+
+        def __init__(
+            self,
+            *,
+            id_auditoria: int | None = None,
+            actor_id: int | None = None,
+            usuario_id: int | None = None,
+            accion: str | None = None,
+            resultado: str | None = None,
+            anterior: str | None = None,
+            nuevo: str | None = None,
+            fecha: datetime | None = None,
+        ) -> None: ...
+
     __tablename__ = "auditoria_iam"
 
     id_auditoria: Mapped[int] = mapped_column(
@@ -95,6 +147,24 @@ class AuditoriaIAMModelo(db.Model):
 
 class SesionUsuarioModelo(db.Model):
     """Sesión HTTP; la clave primaria es el digest, nunca el token de la cookie."""
+
+    if TYPE_CHECKING:
+        from typing import ClassVar
+        from sqlalchemy import Table
+
+        __table__: ClassVar[Table]
+
+        def __init__(
+            self,
+            *,
+            digest: str | None = None,
+            id_usuario: int | None = None,
+            fecha_creacion: datetime | None = None,
+            fecha_actividad: datetime | None = None,
+            fecha_expiracion: datetime | None = None,
+            fecha_revocacion: datetime | None = None,
+        ) -> None: ...
+
 
     __tablename__ = "sesion_usuario"
 

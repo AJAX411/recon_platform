@@ -1,6 +1,7 @@
 """Tablas SQLAlchemy de Persona y TipoPersona; no son entidades de dominio."""
 
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.dialects import mysql
@@ -17,6 +18,21 @@ def _ahora_utc_para_mysql() -> datetime:
 
 
 class TipoPersonaModelo(db.Model):
+    if TYPE_CHECKING:
+        from typing import ClassVar
+        from sqlalchemy import Table
+
+        __table__: ClassVar[Table]
+
+        def __init__(
+            self,
+            *,
+            id_tipo_persona: int | None = None,
+            nombre: str | None = None,
+            descripcion: str | None = None,
+            estado: str | None = None,
+        ) -> None: ...
+
     __tablename__ = "tipo_persona"
     __table_args__ = (UniqueConstraint("nombre", name="uq_tipo_persona_nombre"),)
 
@@ -29,6 +45,30 @@ class TipoPersonaModelo(db.Model):
 
 
 class PersonaModelo(db.Model):
+    if TYPE_CHECKING:
+        from typing import ClassVar
+        from sqlalchemy import Table
+
+        __table__: ClassVar[Table]
+
+        def __init__(
+            self,
+            *,
+            id_persona: int | None = None,
+            id_tipo_persona: int | None = None,
+            identificador_institucional: str | None = None,
+            tipo_documento: str | None = None,
+            numero_documento: str | None = None,
+            primer_nombre: str | None = None,
+            segundo_nombre: str | None = None,
+            primer_apellido: str | None = None,
+            segundo_apellido: str | None = None,
+            estado: str | None = None,
+            fecha_creacion: datetime | None = None,
+            fecha_actualizacion: datetime | None = None,
+            tipo_persona: TipoPersonaModelo | None = None,
+        ) -> None: ...
+
     __tablename__ = "persona"
     __table_args__ = (
         UniqueConstraint(
@@ -77,6 +117,23 @@ class PersonaModelo(db.Model):
 
 class AuditoriaPersonasModelo(db.Model):
     """Traza mínima de cambios administrativos; sin instantáneas de datos personales."""
+
+    if TYPE_CHECKING:
+        from typing import ClassVar
+        from sqlalchemy import Table
+
+        __table__: ClassVar[Table]
+
+        def __init__(
+            self,
+            *,
+            id_auditoria: int | None = None,
+            actor_id: int | None = None,
+            id_persona: int | None = None,
+            accion: str | None = None,
+            fecha: datetime | None = None,
+        ) -> None: ...
+
 
     __tablename__ = "auditoria_personas"
     __table_args__ = (CheckConstraint(

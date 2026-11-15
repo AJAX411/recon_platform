@@ -177,14 +177,17 @@ def verificar(base: str, etapa: str, guardar: Path | None, comparar: Path | None
                  "DB_TEST_PASSWORD") if base == "recon_tests" else (
                  "DB_HOST", "DB_PORT", "DB_NAME", "DB_USER", "DB_PASSWORD")
     exigir(all(os.getenv(v) for v in variables), "Configuración explícita incompleta.")
-    url = make_url(obtener_uri_mysql(pruebas=base == "recon_tests"))
+    uri = obtener_uri_mysql(pruebas=base == "recon_tests")
+    if uri is None:
+        raise ValueError("Configuración explícita incompleta.")
+    url = make_url(uri)
     (destino_tests if base == "recon_tests" else destino_dev)(url)
     motor = create_engine(url, poolclass=NullPool)
     try:
         with motor.connect() as conexion:
             (identidad_tests if base == "recon_tests" else identidad_dev)(conexion)
-            tablas = dict(conexion.execute(text(
-                "SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()")).all())
+            tablas = {clave: valor for clave, valor in conexion.execute(text(
+                "SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()")).all()}
             esperadas = TABLAS_ANTERIORES | ({"evento_acceso"} if etapa == "despues" else set())
             exigir(set(tablas) == esperadas and all(v == "InnoDB" for v in tablas.values()),
                    "Tablas o motores inesperados.")

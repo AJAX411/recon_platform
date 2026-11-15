@@ -11,8 +11,8 @@ from sqlalchemy import select
 
 from recon_platform import create_app
 from recon_platform.extensions import db
-from recon_platform.identidad import api
-from recon_platform.identidad.aplicacion.casos_de_uso import (
+from recon_platform.identidad.controladores import seguridad
+from recon_platform.identidad.servicios.cuentas import (
     BootstrapSuperadmin,
     CambiarEstadoUsuario,
     CambiarRolUsuario,
@@ -30,7 +30,7 @@ from recon_platform.identidad.infraestructura.modelos import (
     UsuarioPlataformaModelo,
 )
 from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
-from recon_platform.identidad.infraestructura.sesiones import RepositorioSesionesSQLAlchemy
+from recon_platform.identidad.infraestructura.repositorios_sesiones import RepositorioSesionesSQLAlchemy
 from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
 
 CLAVE = "Clave-Ficticia-Prueba-2026!"
@@ -44,16 +44,16 @@ def entorno(monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[Flask, FlaskClien
     monkeypatch.setenv("RECON_LOCAL_HTTP", "1")
     monkeypatch.setenv("RECON_SESSION_COOKIE_SECURE", "0")
     reloj = [INICIO]
-    monkeypatch.setattr(api, "_ahora", lambda: reloj[0])
+    monkeypatch.setattr(seguridad, "ahora_utc", lambda: reloj[0])
     aplicacion = create_app(pruebas=True)
 
     @aplicacion.get("/api/v1/prueba-admin")
-    @api.requerir_roles("SUPERADMIN")
+    @seguridad.requerir_roles("SUPERADMIN")
     def solo_superadmin():
         return jsonify({"estado": "permitido"})
 
     @aplicacion.post("/api/v1/prueba-admin")
-    @api.requerir_roles("SUPERADMIN")
+    @seguridad.requerir_roles("SUPERADMIN")
     def cambio_superadmin():
         return jsonify({"estado": "permitido"})
 
@@ -84,7 +84,11 @@ def entorno(monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[Flask, FlaskClien
 def _csrf(cliente: FlaskClient) -> str:
     respuesta = cliente.get("/api/v1/auth/csrf")
     assert respuesta.status_code == 200
-    return respuesta.json["csrf_token"]
+    datos = respuesta.get_json()
+    assert isinstance(datos, dict)
+    token = datos["csrf_token"]
+    assert isinstance(token, str)
+    return token
 
 
 def _login(cliente: FlaskClient, usuario: str, clave: str = CLAVE) -> tuple[int, str | None]:
@@ -115,6 +119,50 @@ def test_login_me_y_cookie_opaca_guardada_solo_como_digest(entorno) -> None:
         assert sesiones[1].digest == hashlib.sha256(cookie.value.encode("ascii")).hexdigest()
         assert cookie.value not in sesiones[1].digest
         assert sesiones[1].id_usuario == admin_id
+
+
+def test_preparar_csrf_reutiliza_token_valido_y_reemplaza_un_token_invalido(entorno) -> None:
+    app, cliente, _, _, _ = entorno
+    primera = cliente.get("/api/v1/auth/csrf")
+    assert primera.status_code == 200
+    cookie = cliente.get_cookie("recon_session", path="/api/v1")
+    assert cookie is not None
+    token_anterior = cookie.value
+    segunda = cliente.get("/api/v1/auth/csrf")
+    assert segunda.status_code == 200 and segunda.json == primera.json
+    conservada = cliente.get_cookie("recon_session", path="/api/v1")
+    assert conservada is not None and conservada.value == token_anterior
+    cliente.set_cookie("recon_session", "invalida", path="/api/v1")
+    nueva = cliente.get("/api/v1/auth/csrf")
+    assert nueva.status_code == 200
+    reemplazo = cliente.get_cookie("recon_session", path="/api/v1")
+    assert reemplazo is not None and reemplazo.value != token_anterior
+    assert reemplazo.http_only and reemplazo.same_site == "Lax"
+    with app.app_context():
+        assert len(db.session.scalars(select(SesionUsuarioModelo)).all()) == 2
+
+
+def test_login_con_cuenta_sin_id_falla_503_sin_crear_sesion_autenticada(entorno, monkeypatch):
+    app, cliente, _, _, _ = entorno
+    csrf = _csrf(cliente)
+    original = RepositorioIAMSQLAlchemy.obtener_por_login
+
+    def obtener_sin_id(self: RepositorioIAMSQLAlchemy, login: str):
+        cuenta = original(self, login)
+        if cuenta is not None:
+            cuenta.id_usuario = None
+        return cuenta
+
+    monkeypatch.setattr(RepositorioIAMSQLAlchemy, "obtener_por_login", obtener_sin_id)
+    respuesta = cliente.post("/api/v1/auth/login",
+        json={"login": "admin.ficticio", "contrasena": CLAVE}, headers={"X-CSRF-Token": csrf})
+    assert respuesta.status_code == 503
+    assert respuesta.json == {"error": "No se pudo completar la autenticación."}
+    with app.app_context():
+        sesiones = db.session.scalars(select(SesionUsuarioModelo)).all()
+        assert len(sesiones) == 1 and sesiones[0].id_usuario is None
+    monkeypatch.setattr(RepositorioIAMSQLAlchemy, "obtener_por_login", original)
+    assert _login(cliente, "admin.ficticio")[0] == 200
 
 
 def test_csrf_protege_login_logout_y_cambio_de_estado(entorno) -> None:

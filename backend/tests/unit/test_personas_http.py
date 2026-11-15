@@ -1,13 +1,21 @@
 """API Personas con SQLite efímero y sesiones IAM reales; no abre MySQL."""
 
+from dataclasses import replace
+
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from recon_platform.extensions import db
-from recon_platform.identidad.aplicacion.casos_de_uso import CrearUsuarioPlataforma
+from recon_platform.identidad.servicios.cuentas import CrearUsuarioPlataforma
 from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
 from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
-from recon_platform.personas.aplicacion.casos_de_uso import ActorPersonas, AdministrarPersonas, PermisoPersonasDenegado
+from recon_platform.personas.servicios.personas import (
+    ActorPersonas,
+    AdministrarPersonas,
+    ConflictoIntegridad,
+    DatosInvalidosPersona,
+    PermisoPersonasDenegado,
+)
 from recon_platform.personas.dominio.persona import Persona
 from recon_platform.personas.dominio.tipo_persona import TipoPersona
 from recon_platform.personas.infraestructura.modelos import AuditoriaPersonasModelo, PersonaModelo, TipoPersonaModelo
@@ -167,6 +175,7 @@ def test_caso_administrativo_rollback_de_actualizacion_y_autorizacion(personas_e
             primer_nombre="Inicial", primer_apellido="Ficticia",
             tipo_documento="PRUEBA", numero_documento="CASO-1",
             tipo_persona=TipoPersona(nombre="VISITANTE")))
+        assert registrada.id_persona is not None
         with pytest.raises(PermisoPersonasDenegado):
             caso.actualizar(actor=ActorPersonas(superadmin_id, "OPERADOR"),
                             id_persona=registrada.id_persona,
@@ -179,3 +188,79 @@ def test_caso_administrativo_rollback_de_actualizacion_y_autorizacion(personas_e
                             datos={"primer_nombre": "No persistir"})
         db.session.expire_all()
         assert caso.consultar(actor=actor, id_persona=registrada.id_persona).primer_nombre == "Inicial"
+
+
+@pytest.mark.parametrize("tipo_invalido", [None, 5, [], {}, object()],
+                         ids=["null", "entero", "lista", "objeto_json", "objeto"])
+def test_actualizacion_interna_rechaza_tipo_no_textual_antes_del_puerto(
+    personas_entorno, monkeypatch, tipo_invalido: object,
+):
+    app, _, actor_id, _, _ = personas_entorno
+    with app.app_context():
+        repo = RepositorioPersonasSQLAlchemy(db.session)
+        tipos = RepositorioTiposPersonaSQLAlchemy(db.session)
+        caso = AdministrarPersonas(repo, tipos, UnidadTrabajoSQLAlchemy(db.session))
+        actor = ActorPersonas(actor_id, "SUPERADMIN")
+        persona = caso.registrar(actor=actor, persona=Persona(
+            primer_nombre="Inicial", primer_apellido="Ficticia", tipo_documento="PRUEBA",
+            numero_documento="INTERNO-FASE1", tipo_persona=TipoPersona(nombre="VISITANTE")))
+        id_persona = persona.id_persona
+        assert id_persona is not None
+        fecha_anterior = persona.fecha_actualizacion
+        eventos_antes = db.session.scalar(select(func.count()).select_from(AuditoriaPersonasModelo))
+
+        def no_consultar_tipo(_nombre: str):
+            pytest.fail("Una entrada no textual no debe alcanzar el puerto de tipos.")
+
+        monkeypatch.setattr(tipos, "obtener_por_nombre", no_consultar_tipo)
+        with pytest.raises(DatosInvalidosPersona):
+            caso.actualizar(actor=actor, id_persona=id_persona,
+                            datos={"tipo_persona": tipo_invalido, "primer_nombre": "No persistir"})
+        conservada = caso.consultar(actor=actor, id_persona=id_persona)
+        assert conservada.primer_nombre == "Inicial"
+        assert conservada.fecha_actualizacion == fecha_anterior
+        assert db.session.scalar(select(func.count()).select_from(AuditoriaPersonasModelo)) == eventos_antes
+
+
+def test_repositorio_actualizar_exige_tipo_persistido_sin_ensuciar_fila(personas_entorno):
+    app, _, actor_id, _, _ = personas_entorno
+    with app.app_context():
+        repo = RepositorioPersonasSQLAlchemy(db.session)
+        caso = AdministrarPersonas(repo, RepositorioTiposPersonaSQLAlchemy(db.session),
+                                  UnidadTrabajoSQLAlchemy(db.session))
+        persona = caso.registrar(actor=ActorPersonas(actor_id, "SUPERADMIN"), persona=Persona(
+            primer_nombre="Inicial", primer_apellido="Ficticia", tipo_documento="PRUEBA",
+            numero_documento="FK-FASE1", tipo_persona=TipoPersona(nombre="VISITANTE")))
+        id_persona = persona.id_persona
+        assert id_persona is not None
+        invalida = replace(persona, primer_nombre="No persistir",
+                           tipo_persona=TipoPersona(nombre="VISITANTE"))
+        with pytest.raises(ConflictoIntegridad, match="TipoPersona debe existir"):
+            repo.actualizar(invalida)
+        assert not db.session.dirty
+        conservada = repo.obtener_por_id(id_persona)
+        assert conservada is not None
+        assert conservada.primer_nombre == "Inicial"
+        assert conservada.tipo_persona.id_tipo_persona == persona.tipo_persona.id_tipo_persona
+        assert conservada.fecha_actualizacion == persona.fecha_actualizacion
+
+
+def test_alta_sin_id_devuelto_revierte_persona_y_auditoria(personas_entorno, monkeypatch):
+    app, cliente, _, _, _ = personas_entorno
+    _, csrf = _login(cliente, "admin.ficticio")
+    original = RepositorioPersonasSQLAlchemy.agregar
+
+    def agregar_sin_id(self: RepositorioPersonasSQLAlchemy, persona: Persona) -> Persona:
+        guardada = original(self, persona)
+        guardada.id_persona = None
+        return guardada
+
+    monkeypatch.setattr(RepositorioPersonasSQLAlchemy, "agregar", agregar_sin_id)
+    respuesta = _crear(cliente, csrf, numero_documento="SIN-ID-FASE1")
+    assert respuesta.status_code == 503
+    assert respuesta.json == {"error": "La administración de Personas no está disponible."}
+    with app.app_context():
+        assert db.session.scalar(select(func.count()).select_from(PersonaModelo)) == 0
+        assert db.session.scalar(select(func.count()).select_from(AuditoriaPersonasModelo)) == 0
+    monkeypatch.setattr(RepositorioPersonasSQLAlchemy, "agregar", original)
+    assert _crear(cliente, csrf, numero_documento="SIN-ID-FASE1").status_code == 201

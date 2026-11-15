@@ -35,36 +35,36 @@ def create_app(*, pruebas: bool = False) -> Flask:
         # Registrar metadatos antes de asociar Flask-Migrate.
         from recon_platform.identidad.infraestructura import modelos as modelos_iam  # noqa: F401
         from recon_platform.personas.infraestructura import modelos  # noqa: F401
-        from recon_platform.accesos import infraestructura as modelos_puntos  # noqa: F401
-        from recon_platform.integracion_edge import infraestructura as modelos_dispositivos  # noqa: F401
-        from recon_platform.auditoria import infraestructura as modelos_auditoria  # noqa: F401
-        from recon_platform.accesos import eventos_infraestructura as modelos_eventos  # noqa: F401
+        from recon_platform.accesos.infraestructura import modelos_puntos  # noqa: F401
+        from recon_platform.integracion_edge.infraestructura import modelos as modelos_dispositivos  # noqa: F401
+        from recon_platform.auditoria.infraestructura import modelos as modelos_auditoria  # noqa: F401
+        from recon_platform.accesos.infraestructura import modelos_eventos  # noqa: F401
 
         migrate.init_app(app, db)
 
-    from recon_platform.identidad.api import bp as bp_autenticacion
-    from recon_platform.identidad.aplicacion.limitador import LimitadorIntentos
+    from recon_platform.identidad.controladores.autenticacion import bp as bp_autenticacion
+    from recon_platform.identidad.servicios.limitador import LimitadorIntentos
 
     app.extensions["recon_limitador_login"] = LimitadorIntentos()
     app.register_blueprint(bp_autenticacion)
 
-    from recon_platform.identidad.administracion_api import bp as bp_administracion_iam
+    from recon_platform.identidad.controladores.usuarios import bp as bp_administracion_iam
 
     app.register_blueprint(bp_administracion_iam)
 
-    from recon_platform.personas.api import bp as bp_personas
+    from recon_platform.personas.controladores.personas import bp as bp_personas
 
     app.register_blueprint(bp_personas)
 
-    from recon_platform.accesos.api import bp as bp_puntos
-    from recon_platform.integracion_edge.api import bp as bp_dispositivos
-    from recon_platform.auditoria.api import bp as bp_auditoria
+    from recon_platform.accesos.controladores.puntos import bp as bp_puntos
+    from recon_platform.integracion_edge.controladores.dispositivos import bp as bp_dispositivos
+    from recon_platform.auditoria.controladores.eventos import bp as bp_auditoria
 
     app.register_blueprint(bp_puntos)
     app.register_blueprint(bp_dispositivos)
     app.register_blueprint(bp_auditoria)
 
-    from recon_platform.accesos.eventos_api import bp as bp_eventos_acceso
+    from recon_platform.accesos.controladores.eventos import bp as bp_eventos_acceso
 
     app.register_blueprint(bp_eventos_acceso)
 

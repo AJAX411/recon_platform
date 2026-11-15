@@ -10,15 +10,15 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from recon_platform.identidad.aplicacion.casos_de_uso import (
+from recon_platform.identidad.servicios.cuentas import (
     BootstrapSuperadmin,
     CambiarEstadoUsuario,
     CrearUsuarioPlataforma,
 )
-from recon_platform.identidad.aplicacion.sesiones import GestionSesiones
+from recon_platform.identidad.servicios.sesiones import GestionSesiones
 from recon_platform.identidad.infraestructura.modelos import SesionUsuarioModelo, UsuarioPlataformaModelo
 from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
-from recon_platform.identidad.infraestructura.sesiones import RepositorioSesionesSQLAlchemy
+from recon_platform.identidad.infraestructura.repositorios_sesiones import RepositorioSesionesSQLAlchemy
 from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
 
 pytestmark = pytest.mark.mysql_integration
@@ -65,6 +65,7 @@ def test_sesiones_independientes_revocables_y_sin_token_claro(
     admin = BootstrapSuperadmin(
         repo_iam, UnidadTrabajoIAMSQLAlchemy(sesion_sesiones_mysql)
     ).ejecutar(login=f"sesion.{uuid4().hex[:20]}", contrasena=CLAVE).usuario
+    assert admin.id_usuario is not None
     gestor = _gestor(sesion_sesiones_mysql)
     anonima = gestor.iniciar_anonima(AHORA)
     autenticada = gestor.iniciar_autenticada(anonima, admin.login, CLAVE, AHORA)
@@ -122,10 +123,12 @@ def test_desactivacion_revoca_sesiones_en_la_transaccion_iam(
     admin = BootstrapSuperadmin(repo, unidad).ejecutar(
         login=f"sesion.{uuid4().hex[:20]}", contrasena=CLAVE
     ).usuario
+    assert admin.id_usuario is not None
     cuenta = CrearUsuarioPlataforma(repo, unidad).ejecutar(
         actor_id=admin.id_usuario, login=f"sesion.{uuid4().hex[:20]}",
         contrasena=CLAVE, rol_nombre="OPERADOR",
     )
+    assert cuenta.id_usuario is not None
     gestor = _gestor(sesion_sesiones_mysql)
     anonima = gestor.iniciar_anonima(AHORA)
     resultado = gestor.iniciar_autenticada(anonima, cuenta.login, CLAVE, AHORA)

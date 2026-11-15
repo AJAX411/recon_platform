@@ -12,14 +12,17 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
-from recon_platform.accesos.eventos_aplicacion import (
-    ActorAcceso, ConflictoIdempotencia, RegistrarEventoManual,
+from recon_platform.accesos.servicios.eventos import (
+    ActorAcceso, ConflictoIdempotencia, RegistrarEventoManual, ResultadoRegistro,
 )
-from recon_platform.accesos.eventos_infraestructura import (
-    EventoAccesoModelo, RepositorioEventosSQLAlchemy, UnidadTrabajoEventosSQLAlchemy,
+from recon_platform.accesos.infraestructura.modelos_eventos import EventoAccesoModelo
+from recon_platform.accesos.infraestructura.repositorios_eventos import RepositorioEventosSQLAlchemy
+from recon_platform.accesos.infraestructura.unidad_trabajo_eventos import UnidadTrabajoEventosSQLAlchemy
+from recon_platform.accesos.infraestructura.modelos_puntos import PuntoAccesoModelo
+from recon_platform.auditoria.infraestructura.modelos import EventoAuditoriaModelo
+from recon_platform.auditoria.infraestructura.repositorios import (
+    RepositorioEventosSQLAlchemy as RepoAuditoria,
 )
-from recon_platform.accesos.infraestructura import PuntoAccesoModelo
-from recon_platform.auditoria.infraestructura import EventoAuditoriaModelo, RepositorioEventosSQLAlchemy as RepoAuditoria
 from recon_platform.extensions import db
 from recon_platform.identidad.infraestructura.modelos import RolModelo, UsuarioPlataformaModelo
 from recon_platform.personas.infraestructura.modelos import PersonaModelo, TipoPersonaModelo
@@ -124,6 +127,7 @@ def test_checks_evento_mysql(sesion_0006: Session, cambios: dict, restriccion: s
     sesion_0006.add(_evento(punto, **cambios))
     with pytest.raises(OperationalError) as error:
         sesion_0006.flush()
+    assert error.value.orig is not None
     assert error.value.orig.args[0] == 3819
     assert re.findall(r"\bck_evento_acceso_[a-z_]+\b", error.value.orig.args[1]) == [restriccion]
 
@@ -146,24 +150,32 @@ def datos_confirmados_0006(conexion_0006: Connection):
     rol_id = conexion_0006.scalar(select(RolModelo.id_rol).where(RolModelo.nombre == "ADMINISTRADOR"))
     tipo_id = conexion_0006.scalar(select(TipoPersonaModelo.id_tipo_persona).where(
         TipoPersonaModelo.nombre == "VISITANTE"))
-    usuario = conexion_0006.execute(insert(UsuarioPlataformaModelo).values(
+    clave_usuario = conexion_0006.execute(insert(UsuarioPlataformaModelo).values(
         login="test-0006-" + marca, hash_contrasena="HASH_NO_AUTENTICABLE_DE_PRUEBA",
         id_rol=rol_id, estado="ACTIVO", fecha_creacion=fecha, fecha_actualizacion=fecha
-    )).inserted_primary_key[0]
-    persona = conexion_0006.execute(insert(PersonaModelo).values(
+    )).inserted_primary_key
+    assert clave_usuario is not None
+    usuario = clave_usuario[0]
+    clave_persona = conexion_0006.execute(insert(PersonaModelo).values(
         id_tipo_persona=tipo_id, primer_nombre="Prueba", primer_apellido="Ficticia",
         tipo_documento="CC", numero_documento="FICT-" + marca,
         estado="ACTIVO", fecha_creacion=fecha, fecha_actualizacion=fecha
-    )).inserted_primary_key[0]
-    otra_persona = conexion_0006.execute(insert(PersonaModelo).values(
+    )).inserted_primary_key
+    assert clave_persona is not None
+    persona = clave_persona[0]
+    clave_otra_persona = conexion_0006.execute(insert(PersonaModelo).values(
         id_tipo_persona=tipo_id, primer_nombre="Otra", primer_apellido="Ficticia",
         tipo_documento="CC", numero_documento="FICT-B-" + marca,
         estado="ACTIVO", fecha_creacion=fecha, fecha_actualizacion=fecha
-    )).inserted_primary_key[0]
-    punto = conexion_0006.execute(insert(PuntoAccesoModelo).values(
+    )).inserted_primary_key
+    assert clave_otra_persona is not None
+    otra_persona = clave_otra_persona[0]
+    clave_punto = conexion_0006.execute(insert(PuntoAccesoModelo).values(
         codigo="T-" + marca, nombre="Punto ficticio", estado="ACTIVO",
         fecha_creacion=fecha, fecha_actualizacion=fecha
-    )).inserted_primary_key[0]
+    )).inserted_primary_key
+    assert clave_punto is not None
+    punto = clave_punto[0]
     conexion_0006.commit()
     try:
         yield usuario, persona, otra_persona, punto
@@ -180,6 +192,11 @@ def datos_confirmados_0006(conexion_0006: Connection):
         conexion_0006.execute(UsuarioPlataformaModelo.__table__.delete().where(
             UsuarioPlataformaModelo.id_usuario == usuario))
         conexion_0006.commit()
+
+
+def _resultado_exitoso(resultado: ResultadoRegistro | ConflictoIdempotencia) -> ResultadoRegistro:
+    assert isinstance(resultado, ResultadoRegistro)
+    return resultado
 
 
 @pytest.mark.parametrize("modo", ["distintas", "reintento", "misma_clave_otra_persona"])
@@ -223,10 +240,10 @@ def test_concurrencia_real_dos_conexiones_mysql(aplicacion_mysql, datos_confirma
                 EventoAuditoriaModelo.accion == "REGISTRAR_EVENTO_ACCESO_MANUAL"))
             if modo == "reintento":
                 assert len(eventos) == auditorias == 1
-                assert sorted(r.repetido for r in resultados) == [False, True]
+                assert sorted(_resultado_exitoso(r).repetido for r in resultados) == [False, True]
             elif modo == "distintas":
                 assert len(eventos) == auditorias == 2
-                assert sorted(r.evento.tipo_incidencia_secuencia or "" for r in resultados) == [
+                assert sorted(_resultado_exitoso(r).evento.tipo_incidencia_secuencia or "" for r in resultados) == [
                     "", "ENTRADA_REPETIDA"]
             else:
                 assert len(eventos) == auditorias == 1

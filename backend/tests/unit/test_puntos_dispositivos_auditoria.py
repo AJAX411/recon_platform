@@ -1,20 +1,28 @@
 """Incremento administrativo con SQLite efímero y sesiones HTTP reales."""
 
 import json
+from datetime import UTC
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 
-from recon_platform.accesos.aplicacion import AdministrarPuntos, PermisoPuntoDenegado
-from recon_platform.accesos.dominio import PuntoAcceso
-from recon_platform.accesos.infraestructura import PuntoAccesoModelo, RepositorioPuntosSQLAlchemy
-from recon_platform.auditoria.infraestructura import EventoAuditoriaModelo, RepositorioEventosSQLAlchemy, UnidadTrabajoSQLAlchemy
+from recon_platform.accesos.servicios.puntos import AdministrarPuntos, PermisoPuntoDenegado
+from recon_platform.accesos.dominio.punto_acceso import PuntoAcceso
+from recon_platform.accesos.infraestructura.modelos_puntos import PuntoAccesoModelo
+from recon_platform.accesos.infraestructura.repositorios_puntos import RepositorioPuntosSQLAlchemy
+from recon_platform.auditoria.infraestructura.modelos import EventoAuditoriaModelo
+from recon_platform.auditoria.infraestructura.repositorios import RepositorioEventosSQLAlchemy
+from recon_platform.auditoria.infraestructura.unidad_trabajo import UnidadTrabajoSQLAlchemy
 from recon_platform.extensions import db
-from recon_platform.identidad.aplicacion.casos_de_uso import CrearUsuarioPlataforma
+from recon_platform.identidad.servicios.cuentas import CrearUsuarioPlataforma
 from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
 from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
-from recon_platform.integracion_edge.infraestructura import DispositivoEdgeModelo
-from recon_platform.integracion_edge.dominio import DispositivoEdge, permite_nueva_autorizacion
+from recon_platform.integracion_edge.infraestructura.modelos import DispositivoEdgeModelo
+from recon_platform.integracion_edge.infraestructura.repositorios import RepositorioDispositivosSQLAlchemy
+from recon_platform.integracion_edge.dominio.dispositivo_edge import (
+    DispositivoEdge,
+    permite_nueva_autorizacion,
+)
 
 from test_autenticacion_http import CLAVE, _login, entorno  # noqa: F401
 
@@ -94,7 +102,9 @@ def test_creacion_relacion_consulta_estado_y_modo_con_auditoria(entorno_incremen
         "CREAR_DISPOSITIVO_EDGE", "EDITAR_PUNTO_ACCESO", "CAMBIAR_ESTADO_PUNTO",
         "EDITAR_DISPOSITIVO_EDGE", "CAMBIAR_ESTADO_DISPOSITIVO", "CAMBIAR_MODO_DISPOSITIVO"]
     assert all(e[1] == "EXITOSO" and e[2] == actor_id for e in eventos)
-    assert json.loads(eventos[-1][5]) == {"anterior": "AUTOMATICO", "nuevo": "ENTRADA"}
+    detalle = eventos[-1][5]
+    assert detalle is not None
+    assert json.loads(detalle) == {"anterior": "AUTOMATICO", "nuevo": "ENTRADA"}
 
 
 def test_matriz_de_permisos_y_denegaciones_auditadas(entorno_incremento):
@@ -154,7 +164,9 @@ def test_validacion_duplicados_fk_y_campos_inmutables(entorno_incremento):
     fallos = [e for e in _eventos(app) if e[1] == "FALLIDO"]
     assert len(fallos) >= 10
     fallo_modo = [e for e in fallos if e[0] == "CAMBIAR_MODO_DISPOSITIVO"]
-    assert json.loads(fallo_modo[0][5]) == {"anterior": "AUTOMATICO", "nuevo": None,
+    detalle = fallo_modo[0][5]
+    assert detalle is not None
+    assert json.loads(detalle) == {"anterior": "AUTOMATICO", "nuevo": None,
                                             "motivo": "DATOS_INVALIDOS"}
 
 
@@ -232,6 +244,23 @@ def test_auditoria_consulta_filtros_paginacion_y_solo_lectura(entorno_incremento
     assert len(_eventos(app)) == 2
 
 
+def test_filtros_auditoria_conservan_hasta_inclusivo_y_actor_convertido(entorno_incremento):
+    app, cliente, actor_id, _, _ = entorno_incremento
+    headers = _autenticar(cliente)
+    assert _punto(cliente, headers).status_code == 201
+    with app.app_context():
+        fecha = db.session.scalar(select(EventoAuditoriaModelo.fecha_hora).where(
+            EventoAuditoriaModelo.accion == "CREAR_PUNTO_ACCESO"))
+        assert fecha is not None
+        corte = fecha.replace(tzinfo=UTC).isoformat()
+    respuesta = cliente.get(AUDITORIA, query_string={
+        "id_usuario_actor": str(actor_id), "desde": corte, "hasta": corte})
+    assert respuesta.status_code == 200
+    assert len(respuesta.json["eventos"]) == 1
+    assert respuesta.json["eventos"][0]["accion"] == "CREAR_PUNTO_ACCESO"
+    assert respuesta.json["eventos"][0]["id_usuario_actor"] == actor_id
+
+
 def test_sesion_y_csrf_no_generan_auditoria_general(entorno_incremento):
     app, cliente, _, _, _ = entorno_incremento
     assert cliente.get(PUNTOS).status_code == 401
@@ -248,7 +277,7 @@ def test_denegacion_no_se_disfraza_si_falla_auditoria(entorno_incremento, monkey
     headers = _autenticar(operador, "operador.ficticio")
     def fallar(*_args, **_kwargs):
         raise RuntimeError("Detalle interno ficticio")
-    monkeypatch.setattr("recon_platform.auditoria.aplicacion.AuditoriaGeneral.registrar_fallo", fallar)
+    monkeypatch.setattr("recon_platform.auditoria.servicios.eventos.AuditoriaGeneral.registrar_fallo", fallar)
     respuesta = operador.post(PUNTOS, json={"codigo": "P-01", "nombre": "Denegado"}, headers=headers)
     assert respuesta.status_code == 503
     assert "Detalle interno ficticio" not in respuesta.get_data(as_text=True)
@@ -279,3 +308,52 @@ def test_estado_administrativo_prepara_regla_de_autorizacion():
     dispositivo.estado = "ACTIVO"
     dispositivo.id_punto_acceso = 2
     assert not permite_nueva_autorizacion(punto, dispositivo)
+
+
+@pytest.mark.parametrize("recurso", ["punto", "dispositivo"])
+def test_alta_sin_id_devuelto_revierte_recurso_y_auditoria(entorno_incremento, monkeypatch, recurso):
+    app, cliente, _, _, _ = entorno_incremento
+    headers = _autenticar(cliente)
+    original_punto = RepositorioPuntosSQLAlchemy.agregar
+    original_dispositivo = RepositorioDispositivosSQLAlchemy.agregar
+    id_punto: int | None = None
+    if recurso == "punto":
+        def punto_sin_id(self: RepositorioPuntosSQLAlchemy, punto: PuntoAcceso) -> PuntoAcceso:
+            guardado = original_punto(self, punto)
+            guardado.id_punto_acceso = None
+            return guardado
+
+        monkeypatch.setattr(RepositorioPuntosSQLAlchemy, "agregar", punto_sin_id)
+    else:
+        punto = _punto(cliente, headers)
+        assert punto.status_code == 201
+        id_punto = punto.json["id_punto_acceso"]
+        assert isinstance(id_punto, int)
+
+        def dispositivo_sin_id(
+            self: RepositorioDispositivosSQLAlchemy, dispositivo: DispositivoEdge,
+        ) -> DispositivoEdge:
+            guardado = original_dispositivo(self, dispositivo)
+            guardado.id_dispositivo = None
+            return guardado
+
+        monkeypatch.setattr(RepositorioDispositivosSQLAlchemy, "agregar", dispositivo_sin_id)
+
+    def solicitar():
+        if recurso == "punto":
+            return _punto(cliente, headers, codigo="SIN-ID-FASE1")
+        assert id_punto is not None
+        return _dispositivo(cliente, headers, id_punto, codigo="SIN-ID-FASE1")
+
+    auditorias_antes = len(_eventos(app))
+    respuesta = solicitar()
+    assert respuesta.status_code == 503
+    assert respuesta.json == {"error": "La administración no está disponible."}
+    with app.app_context():
+        modelo = PuntoAccesoModelo if recurso == "punto" else DispositivoEdgeModelo
+        assert db.session.scalar(select(func.count()).select_from(modelo).where(
+            modelo.codigo == "SIN-ID-FASE1")) == 0
+    assert len(_eventos(app)) == auditorias_antes
+    monkeypatch.setattr(RepositorioPuntosSQLAlchemy, "agregar", original_punto)
+    monkeypatch.setattr(RepositorioDispositivosSQLAlchemy, "agregar", original_dispositivo)
+    assert solicitar().status_code == 201

@@ -86,7 +86,9 @@ def test_pruebas_no_exigen_credenciales_de_desarrollo(
     monkeypatch.delenv("DB_USER")
     monkeypatch.delenv("DB_PASSWORD")
 
-    pruebas = make_url(obtener_uri_mysql(pruebas=True))
+    uri = obtener_uri_mysql(pruebas=True)
+    assert uri is not None
+    pruebas = make_url(uri)
     assert pruebas.username == "usuario_test"
 
 

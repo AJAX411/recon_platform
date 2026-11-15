@@ -1,13 +1,14 @@
 """Límite de confirmación de los casos de uso de Personas."""
 
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from flask_sqlalchemy.session import Session as SesionFlask
+from sqlalchemy.orm import Session, scoped_session
 
 from recon_platform.personas.infraestructura.repositorios import _traducir_integridad
 
 
 class UnidadTrabajoSQLAlchemy:
-    def __init__(self, sesion: Session) -> None:
+    def __init__(self, sesion: Session | scoped_session[SesionFlask]) -> None:
         self.sesion = sesion
 
     def confirmar(self) -> None:

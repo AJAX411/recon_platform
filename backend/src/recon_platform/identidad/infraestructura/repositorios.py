@@ -4,9 +4,10 @@ from datetime import UTC, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from flask_sqlalchemy.session import Session as SesionFlask
+from sqlalchemy.orm import Session, scoped_session
 
-from recon_platform.identidad.aplicacion.casos_de_uso import (
+from recon_platform.identidad.servicios.cuentas import (
     ConflictoIntegridadIAM,
     UsuarioDuplicado,
     UsuarioNoExiste,
@@ -34,7 +35,7 @@ def _traducir_integridad(error: IntegrityError) -> ValueError:
 
 
 class RepositorioIAMSQLAlchemy:
-    def __init__(self, sesion: Session) -> None:
+    def __init__(self, sesion: Session | scoped_session[SesionFlask]) -> None:
         self.sesion = sesion
 
     def obtener_rol(self, nombre: str, *, bloquear: bool = False) -> Rol | None:
