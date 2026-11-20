@@ -6,21 +6,15 @@ import pytest
 from sqlalchemy import func, select
 
 from recon_platform.extensions import db
-from recon_platform.identidad.servicios.cuentas import CrearUsuarioPlataforma
-from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
-from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
-from recon_platform.personas.servicios.personas import (
-    ActorPersonas,
-    AdministrarPersonas,
-    ConflictoIntegridad,
-    DatosInvalidosPersona,
-    PermisoPersonasDenegado,
-)
-from recon_platform.personas.dominio.persona import Persona
-from recon_platform.personas.dominio.tipo_persona import TipoPersona
-from recon_platform.personas.infraestructura.modelos import AuditoriaPersonasModelo, PersonaModelo, TipoPersonaModelo
-from recon_platform.personas.infraestructura.repositorios import RepositorioPersonasSQLAlchemy, RepositorioTiposPersonaSQLAlchemy
-from recon_platform.personas.infraestructura.unidad_trabajo import UnidadTrabajoSQLAlchemy
+from recon_platform.identidad.servicio_cuentas import CrearUsuarioPlataforma
+from recon_platform.identidad.repositorio_cuentas import RepositorioIAMSQLAlchemy
+from recon_platform.identidad.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
+from recon_platform.personas.servicio import ActorPersonas, AdministrarPersonas, ConflictoIntegridad, DatosInvalidosPersona, PermisoPersonasDenegado
+from recon_platform.personas.persona import Persona
+from recon_platform.personas.tipo_persona import TipoPersona
+from recon_platform.personas.modelos import AuditoriaPersonasModelo, PersonaModelo, TipoPersonaModelo
+from recon_platform.personas.repositorio import RepositorioPersonasSQLAlchemy, RepositorioTiposPersonaSQLAlchemy
+from recon_platform.personas.unidad_trabajo import UnidadTrabajoSQLAlchemy
 
 from test_autenticacion_http import CLAVE, _login, entorno  # noqa: F401
 
@@ -49,7 +43,7 @@ def personas_entorno(entorno):  # noqa: F811
 
 def _datos(**cambios):
     return {"primer_nombre": "Persona", "primer_apellido": "Ficticia",
-            "tipo_documento": "PRUEBA", "numero_documento": "0001",
+            "tipo_documento": "CC", "numero_documento": "0001",
             "tipo_persona": "VISITANTE", **cambios}
 
 
@@ -85,7 +79,7 @@ def test_actualizacion_estado_y_auditoria(personas_entorno):
     cabeceras = {"X-CSRF-Token": csrf}
     actualizada = cliente.patch(f"{BASE}/{persona_id}", json={
         "tipo_persona": "ESTUDIANTE", "identificador_institucional": "TEST-1",
-        "tipo_documento": "OTRO", "numero_documento": "0002"}, headers=cabeceras)
+        "tipo_documento": "PA", "numero_documento": "0002"}, headers=cabeceras)
     assert actualizada.status_code == 200
     assert actualizada.json["id_persona"] == persona_id
     assert actualizada.json["tipo_persona"] == "ESTUDIANTE"
@@ -173,7 +167,7 @@ def test_caso_administrativo_rollback_de_actualizacion_y_autorizacion(personas_e
         actor = ActorPersonas(superadmin_id, "SUPERADMIN")
         registrada = caso.registrar(actor=actor, persona=Persona(
             primer_nombre="Inicial", primer_apellido="Ficticia",
-            tipo_documento="PRUEBA", numero_documento="CASO-1",
+            tipo_documento="CC", numero_documento="CASO-1",
             tipo_persona=TipoPersona(nombre="VISITANTE")))
         assert registrada.id_persona is not None
         with pytest.raises(PermisoPersonasDenegado):
@@ -202,7 +196,7 @@ def test_actualizacion_interna_rechaza_tipo_no_textual_antes_del_puerto(
         caso = AdministrarPersonas(repo, tipos, UnidadTrabajoSQLAlchemy(db.session))
         actor = ActorPersonas(actor_id, "SUPERADMIN")
         persona = caso.registrar(actor=actor, persona=Persona(
-            primer_nombre="Inicial", primer_apellido="Ficticia", tipo_documento="PRUEBA",
+            primer_nombre="Inicial", primer_apellido="Ficticia", tipo_documento="CC",
             numero_documento="INTERNO-FASE1", tipo_persona=TipoPersona(nombre="VISITANTE")))
         id_persona = persona.id_persona
         assert id_persona is not None
@@ -229,7 +223,7 @@ def test_repositorio_actualizar_exige_tipo_persistido_sin_ensuciar_fila(personas
         caso = AdministrarPersonas(repo, RepositorioTiposPersonaSQLAlchemy(db.session),
                                   UnidadTrabajoSQLAlchemy(db.session))
         persona = caso.registrar(actor=ActorPersonas(actor_id, "SUPERADMIN"), persona=Persona(
-            primer_nombre="Inicial", primer_apellido="Ficticia", tipo_documento="PRUEBA",
+            primer_nombre="Inicial", primer_apellido="Ficticia", tipo_documento="CC",
             numero_documento="FK-FASE1", tipo_persona=TipoPersona(nombre="VISITANTE")))
         id_persona = persona.id_persona
         assert id_persona is not None

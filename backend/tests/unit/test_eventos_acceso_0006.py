@@ -6,23 +6,21 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import func, select
 
-from recon_platform.accesos.controladores import eventos as eventos_api
-from recon_platform.accesos.servicios.eventos import ActorAcceso, RegistrarEventoManual
-from recon_platform.accesos.dominio.evento_acceso import incidencia_secuencia, jornada_utc
-from recon_platform.accesos.infraestructura.modelos_eventos import EventoAccesoModelo
-from recon_platform.accesos.infraestructura.repositorios_eventos import RepositorioEventosSQLAlchemy
-from recon_platform.accesos.infraestructura.unidad_trabajo_eventos import UnidadTrabajoEventosSQLAlchemy
-from recon_platform.auditoria.infraestructura.modelos import EventoAuditoriaModelo
-from recon_platform.auditoria.infraestructura.repositorios import (
-    RepositorioEventosSQLAlchemy as RepositorioAuditoria,
-)
-from recon_platform.accesos.infraestructura.modelos_puntos import PuntoAccesoModelo
+from recon_platform.accesos import controlador_eventos as eventos_api
+from recon_platform.accesos.servicio_eventos import ActorAcceso, RegistrarEventoManual
+from recon_platform.accesos.evento_acceso import incidencia_secuencia, jornada_utc
+from recon_platform.accesos.modelos_eventos import EventoAccesoModelo
+from recon_platform.accesos.repositorio_eventos import RepositorioEventosSQLAlchemy
+from recon_platform.accesos.unidad_trabajo_eventos import UnidadTrabajoEventosSQLAlchemy
+from recon_platform.auditoria.modelos import EventoAuditoriaModelo
+from recon_platform.auditoria.repositorio import RepositorioEventosSQLAlchemy as RepositorioAuditoria
+from recon_platform.accesos.modelos_puntos import PuntoAccesoModelo
 from recon_platform.extensions import db
-from recon_platform.identidad.servicios.cuentas import CrearUsuarioPlataforma
-from recon_platform.identidad.infraestructura.modelos import UsuarioPlataformaModelo
-from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
-from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
-from recon_platform.personas.infraestructura.modelos import PersonaModelo, TipoPersonaModelo
+from recon_platform.identidad.servicio_cuentas import CrearUsuarioPlataforma
+from recon_platform.identidad.modelos import UsuarioPlataformaModelo
+from recon_platform.identidad.repositorio_cuentas import RepositorioIAMSQLAlchemy
+from recon_platform.identidad.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
+from recon_platform.personas.modelos import PersonaModelo, TipoPersonaModelo
 
 from test_autenticacion_http import CLAVE, _login, entorno  # noqa: F401
 

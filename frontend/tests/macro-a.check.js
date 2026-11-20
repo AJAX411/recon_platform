@@ -1,0 +1,133 @@
+import { afterEach, expect, it, vi } from 'vitest'
+import { businessApp, dialogButton, fillPerson, input, readyPerson, submit, waitText, writes } from './businessHelpers.js'
+import { click, findButton } from './helpers.js'
+
+const cleanups = []
+afterEach(() => { while (cleanups.length) cleanups.pop()() })
+const mount = async (...args) => { const app = await businessApp(...args); cleanups.push(app.stop); return app }
+
+it.each(['SUPERADMIN', 'ADMINISTRADOR', 'OPERADOR'])('Perfil de %s es lectura de sesión, accesible y sin nueva petición', async (role) => {
+  const { fetcher } = await mount('/', role)
+  const trigger = document.querySelector('.account-tools > button')
+  expect(findButton('Perfil').closest('[hidden]')).not.toBeNull()
+  trigger.focus(); click(trigger)
+  const before = fetcher.mock.calls.length
+  click(findButton('Perfil'))
+  const dialog = document.querySelector('dialog')
+  expect(dialog.open).toBe(true)
+  expect(dialog.getAttribute('aria-modal')).toBe('true')
+  expect(dialog.textContent).toContain(role)
+  expect(dialog.querySelector('input,form')).toBeNull()
+  expect(fetcher.mock.calls).toHaveLength(before)
+  dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+  expect(document.activeElement).toBe(trigger)
+  click(trigger)
+  findButton('Perfil').focus()
+  document.querySelector('main').focus()
+  await Promise.resolve()
+  expect(trigger.getAttribute('aria-expanded')).toBe('false')
+})
+
+it('el traslado nativo de foco hacia Perfil conserva el botón hasta completar su click', async () => {
+  await mount('/', 'SUPERADMIN')
+  const trigger = document.querySelector('.account-tools > button')
+  const profile = findButton('Perfil')
+  click(trigger)
+  // Secuencia observada en Edge: focusout anuncia el destino antes de actualizar activeElement.
+  document.activeElement.blur()
+  expect(document.activeElement).toBe(document.body)
+  trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: profile }))
+  await Promise.resolve()
+  expect(profile.closest('[hidden]')).toBeNull()
+  click(profile)
+  expect(document.querySelector('dialog')?.open).toBe(true)
+})
+
+it.each(['SUPERADMIN', 'ADMINISTRADOR'])('Alta de Persona %s resume ocho campos, cancela y confirma una sola vez', async (role) => {
+  const { fetcher, state } = await mount('/personas/nueva', role)
+  await readyPerson(); fillPerson({ primer_nombre: '<script>ficticio</script>' }); submit(); submit()
+  const modal = document.querySelector('dialog')
+  expect(document.querySelectorAll('dialog')).toHaveLength(1)
+  expect(modal.querySelectorAll('dl dt')).toHaveLength(8)
+  expect(modal.textContent).toContain('<script>ficticio</script>')
+  expect(modal.querySelector('script')).toBeNull()
+  expect(document.activeElement).toBe(dialogButton('Cancelar'))
+  expect(writes(fetcher)).toHaveLength(0)
+  click(dialogButton('Cancelar')); await Promise.resolve()
+  submit()
+  const confirm = dialogButton('Confirmar registro')
+  click(confirm); click(confirm)
+  await waitText('Referencia interna')
+  expect(writes(fetcher)).toHaveLength(1)
+  expect(state.people[100].primer_nombre).toBe('<script>ficticio</script>')
+})
+
+it.each(['SUPERADMIN', 'ADMINISTRADOR'])('Edición de Persona %s resume solo cambios y NULL opcional', async (role) => {
+  const { fetcher, state } = await mount('/personas/7/editar', role)
+  await readyPerson()
+  input('primer_nombre', 'Nombre revisado'); input('segundo_nombre', 'Opcional'); submit()
+  expect(document.querySelectorAll('dialog dt')).toHaveLength(2)
+  expect(document.querySelector('dialog').textContent).not.toContain('DOC-FICTICIO')
+  click(dialogButton('Confirmar edición')); await waitText('Referencia interna')
+  expect(writes(fetcher)).toHaveLength(1)
+  expect(state.people[7].primer_nombre).toBe('Nombre revisado')
+  click(document.querySelector('a[href="/personas/7/editar"]')); await readyPerson()
+  input('segundo_nombre', ''); submit()
+  expect(document.querySelector('dialog').textContent).toContain('Se retirará este dato opcional')
+  click(dialogButton('Cancelar')); await Promise.resolve()
+  expect(writes(fetcher)).toHaveLength(1)
+})
+
+it.each(['SUPERADMIN', 'ADMINISTRADOR'])('Eliminar Persona %s está bloqueado sin contrato, Desactivar conserva datos', async (role) => {
+  const { fetcher, state } = await mount('/personas/7', role)
+  await waitText('Referencia interna')
+  const remove = findButton('Eliminar')
+  expect(remove.disabled).toBe(true)
+  expect(document.getElementById(remove.getAttribute('aria-describedby')).textContent).toContain('contrato de anonimización')
+  click(remove)
+  expect(writes(fetcher)).toHaveLength(0)
+  click(findButton('Desactivar')); click(dialogButton()); await waitText('Operación confirmada')
+  expect(writes(fetcher)).toHaveLength(1)
+  expect(writes(fetcher)[0][0]).toBe('/api/v1/personas/7/estado')
+  expect(writes(fetcher)[0][1].method).toBe('PATCH')
+  expect(state.people[7]).toMatchObject({ estado: 'INACTIVO', primer_nombre: 'Persona', numero_documento: 'DOC-FICTICIO' })
+})
+
+it('OPERADOR no obtiene acciones ni petición de Persona por una ruta directa', async () => {
+  const { fetcher } = await mount('/personas/7', 'OPERADOR')
+  expect(document.querySelector('main').textContent).toContain('Acceso no permitido')
+  expect(findButton('Eliminar')).toBeUndefined()
+  expect(fetcher.mock.calls.some(([url]) => url.startsWith('/api/v1/personas'))).toBe(false)
+})
+
+it('refoco revalida el resumen tras 30 s, deduplica y retira listeners al desmontar', async () => {
+  const clock = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+  const { fetcher, app, stop } = await mount('/')
+  await vi.waitFor(() => expect(app.dashboard.getState().status).toBe('success'))
+  const reads = () => fetcher.mock.calls.filter(([url]) => url === '/api/v1/consultas/dashboard').length
+  const before = reads()
+  window.dispatchEvent(new Event('focus'))
+  expect(reads()).toBe(before)
+  clock.mockReturnValue(1_031_000)
+  window.dispatchEvent(new Event('focus'))
+  document.dispatchEvent(new Event('visibilitychange'))
+  await vi.waitFor(() => expect(reads()).toBe(before + 1))
+  await vi.waitFor(() => expect(app.dashboard.getState().status).toBe('success'))
+  stop(); cleanups.pop()
+  clock.mockReturnValue(1_062_000)
+  window.dispatchEvent(new Event('focus'))
+  expect(reads()).toBe(before + 1)
+})
+
+it('alta Edge usa desplegable asíncrono en orden, sin asociación implícita ni búsqueda exacta', async () => {
+  const { fetcher } = await mount('/dispositivos-edge/nuevo')
+  await vi.waitFor(() => expect(document.querySelector('#id_punto_acceso').options.length).toBe(3))
+  expect([...document.querySelectorAll('main input,main select')].map((x) => x.name))
+    .toEqual(['codigo', 'nombre', 'modo_operacion', 'id_punto_acceso'])
+  expect(document.querySelector('#codigo_punto')).toBeNull()
+  expect(document.querySelector('#id_punto_acceso').value).toBe('')
+  expect(document.querySelector('main').textContent).not.toContain('Seleccionado:')
+  input('id_punto_acceso', '8')
+  expect(document.querySelector('main').textContent).toContain('Seleccionado: Punto activo')
+  expect(writes(fetcher)).toHaveLength(0)
+})

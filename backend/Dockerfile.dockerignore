@@ -1,0 +1,19 @@
+# Contexto efectivo: raíz del repo; whitelist del backend necesario.
+**
+!backend/
+!backend/src/
+!backend/src/**
+!backend/deploy/
+!backend/deploy/**
+!backend/migrations/
+!backend/migrations/**
+!backend/pyproject.toml
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*
+**/.venv
+**/node_modules
+**/*.sql
+**/*.pem
+**/*.key

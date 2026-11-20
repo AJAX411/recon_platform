@@ -36,3 +36,17 @@ Thumbs.db
 
 # Metadatos del empaquetado Python
 *.egg-info/
+
+# Respaldos históricos locales: preservados, fuera del runtime y de la publicación.
+/frontend/legacy-react/
+/frontend/vanilla-candidato/
+
+# Entregas, credenciales TLS y perfiles de ensayos nunca se publican.
+*.zip
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+playwright-report/
+test-results/

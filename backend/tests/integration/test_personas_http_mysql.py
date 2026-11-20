@@ -7,15 +7,15 @@ from sqlalchemy import inspect, select, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
-from recon_platform.identidad.servicios.cuentas import BootstrapSuperadmin
-from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
-from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
-from recon_platform.personas.servicios.personas import ActorPersonas, AdministrarPersonas, PersonaDuplicada
-from recon_platform.personas.dominio.persona import Persona
-from recon_platform.personas.dominio.tipo_persona import TipoPersona
-from recon_platform.personas.infraestructura.modelos import AuditoriaPersonasModelo, PersonaModelo
-from recon_platform.personas.infraestructura.repositorios import RepositorioPersonasSQLAlchemy, RepositorioTiposPersonaSQLAlchemy
-from recon_platform.personas.infraestructura.unidad_trabajo import UnidadTrabajoSQLAlchemy
+from recon_platform.identidad.servicio_cuentas import BootstrapSuperadmin
+from recon_platform.identidad.repositorio_cuentas import RepositorioIAMSQLAlchemy
+from recon_platform.identidad.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
+from recon_platform.personas.servicio import ActorPersonas, AdministrarPersonas, PersonaDuplicada
+from recon_platform.personas.persona import Persona
+from recon_platform.personas.tipo_persona import TipoPersona
+from recon_platform.personas.modelos import AuditoriaPersonasModelo, PersonaModelo
+from recon_platform.personas.repositorio import RepositorioPersonasSQLAlchemy, RepositorioTiposPersonaSQLAlchemy
+from recon_platform.personas.unidad_trabajo import UnidadTrabajoSQLAlchemy
 
 pytestmark = pytest.mark.mysql_integration
 

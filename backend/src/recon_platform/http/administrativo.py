@@ -5,21 +5,10 @@ from collections.abc import Callable
 
 from flask import Response, g, jsonify, request
 
-from recon_platform.accesos.servicios.puntos import (
-    IntegridadPunto,
-    PermisoPuntoDenegado,
-    PuntoDuplicado,
-    PuntoNoExiste,
-)
+from recon_platform.accesos.servicio_puntos import IntegridadPunto, PermisoPuntoDenegado, PuntoDuplicado, PuntoNoExiste
 from recon_platform.composicion import auditoria
 from recon_platform.extensions import db
-from recon_platform.integracion_edge.servicios.dispositivos import (
-    DispositivoDuplicado,
-    DispositivoNoExiste,
-    IntegridadDispositivo,
-    PermisoDispositivoDenegado,
-    PuntoAsociadoNoExiste,
-)
+from recon_platform.integracion_edge.servicio import DispositivoDuplicado, DispositivoNoExiste, IntegridadDispositivo, PermisoDispositivoDenegado, PuntoAsociadoNoExiste
 
 
 def error(codigo: int, mensaje: str) -> tuple[Response, int]:

@@ -184,7 +184,8 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 20,
-            "description": "Texto libre provisional; cat?logo definitivo pendiente."
+            "description": "Código habilitado CC/TI/CE/PA/PPT/RC después del trim exterior vigente. Sin equivalencias ni cambio de mayúsculas; otros códigos se rechazan en altas.",
+            "pattern": "^\\s*(?:CC|TI|CE|PA|PPT|RC)\\s*$"
           },
           "numero_documento": {
             "type": "string",
@@ -239,7 +240,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 20,
-            "description": "Texto libre provisional; cat?logo definitivo pendiente."
+            "description": "Texto histórico admitido cuando el par tipo/número permanece idéntico bajo la normalización vigente. Si cambia tipo o número, el tipo resultante debe estar habilitado en el catálogo."
           },
           "numero_documento": {
             "type": "string",
@@ -1167,6 +1168,343 @@
             "minimum": 0
           }
         }
+      },
+      "ConteosIncidenciasDashboard": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ENTRADA_REPETIDA": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "SALIDA_REPETIDA": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "SALIDA_SIN_ENTRADA_DEL_DIA": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "MovimientoDashboardOperador": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tipo_movimiento",
+          "resultado",
+          "hora_local_aproximada"
+        ],
+        "properties": {
+          "tipo_movimiento": {
+            "type": "string",
+            "enum": [
+              "ENTRADA",
+              "SALIDA"
+            ]
+          },
+          "resultado": {
+            "type": "string",
+            "enum": [
+              "AUTORIZADO",
+              "RECHAZADO"
+            ]
+          },
+          "hora_local_aproximada": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Inicio de la hora en Bogotá; nunca instante exacto del evento."
+          }
+        }
+      },
+      "MovimientoDashboardAdministrativo": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id_evento_acceso",
+          "fecha_hora_ocurrencia",
+          "nombre_persona",
+          "punto",
+          "tipo_movimiento",
+          "resultado",
+          "tipo_incidencia_secuencia",
+          "usuario_registrador"
+        ],
+        "properties": {
+          "id_evento_acceso": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "fecha_hora_ocurrencia": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nombre_persona": {
+            "type": "string",
+            "nullable": true
+          },
+          "punto": {
+            "type": "string"
+          },
+          "tipo_movimiento": {
+            "type": "string",
+            "enum": [
+              "ENTRADA",
+              "SALIDA"
+            ]
+          },
+          "resultado": {
+            "type": "string",
+            "enum": [
+              "AUTORIZADO",
+              "RECHAZADO"
+            ]
+          },
+          "tipo_incidencia_secuencia": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ENTRADA_REPETIDA",
+              "SALIDA_REPETIDA",
+              "SALIDA_SIN_ENTRADA_DEL_DIA",
+              null
+            ]
+          },
+          "usuario_registrador": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "DashboardOperador": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "zona_horaria",
+          "jornada",
+          "generado_en",
+          "incidencias_hoy",
+          "conteos_por_incidencia",
+          "alcance",
+          "ultimos_movimientos",
+          "calidad_datos"
+        ],
+        "properties": {
+          "zona_horaria": {
+            "type": "string",
+            "enum": [
+              "America/Bogota"
+            ]
+          },
+          "jornada": {
+            "type": "string",
+            "format": "date"
+          },
+          "generado_en": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Corte mostrado redondeado a la hora; las consultas usan t exacto interno."
+          },
+          "incidencias_hoy": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "conteos_por_incidencia": {
+            "$ref": "#/components/schemas/ConteosIncidenciasDashboard"
+          },
+          "alcance": {
+            "type": "string",
+            "enum": [
+              "JORNADA_ACTUAL_REDUCIDA"
+            ]
+          },
+          "ultimos_movimientos": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/MovimientoDashboardOperador"
+            }
+          },
+          "calidad_datos": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "cobertura",
+              "precision_temporal"
+            ],
+            "properties": {
+              "cobertura": {
+                "type": "string",
+                "enum": [
+                  "JORNADA_ACTUAL"
+                ]
+              },
+              "precision_temporal": {
+                "type": "string",
+                "enum": [
+                  "HORA"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "DashboardAdministrativo": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "zona_horaria",
+          "jornada",
+          "generado_en",
+          "incidencias_hoy",
+          "conteos_por_incidencia",
+          "alcance",
+          "ultimos_movimientos",
+          "metricas",
+          "calidad_datos"
+        ],
+        "properties": {
+          "zona_horaria": {
+            "type": "string",
+            "enum": [
+              "America/Bogota"
+            ]
+          },
+          "jornada": {
+            "type": "string",
+            "format": "date"
+          },
+          "generado_en": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "incidencias_hoy": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "conteos_por_incidencia": {
+            "$ref": "#/components/schemas/ConteosIncidenciasDashboard"
+          },
+          "alcance": {
+            "type": "string",
+            "enum": [
+              "HISTORICO_ADMINISTRATIVO"
+            ]
+          },
+          "ultimos_movimientos": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/MovimientoDashboardAdministrativo"
+            }
+          },
+          "metricas": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entradas_hoy",
+              "salidas_hoy",
+              "personas_registradas",
+              "dentro_segun_registros"
+            ],
+            "properties": {
+              "entradas_hoy": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "salidas_hoy": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "personas_registradas": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "dentro_segun_registros": {
+                "type": "integer",
+                "minimum": 0,
+                "nullable": true
+              }
+            }
+          },
+          "calidad_datos": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "cobertura",
+              "personas_con_historial",
+              "personas_sin_historial",
+              "estado_ocupacion",
+              "motivo"
+            ],
+            "properties": {
+              "cobertura": {
+                "type": "string",
+                "enum": [
+                  "HISTORIAL_DISPONIBLE_NO_CERTIFICADO",
+                  "INCONSISTENTE"
+                ]
+              },
+              "personas_con_historial": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "personas_sin_historial": {
+                "type": "integer",
+                "minimum": 0,
+                "nullable": true
+              },
+              "estado_ocupacion": {
+                "type": "string",
+                "enum": [
+                  "ESTIMACION",
+                  "NO_DISPONIBLE"
+                ]
+              },
+              "motivo": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "TipoDocumento": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "codigo",
+          "nombre",
+          "habilitado_para_altas"
+        ],
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "habilitado_para_altas": {
+            "type": "boolean",
+            "description": "Habilita altas y nuevas asignaciones del par documental en edición."
+          }
+        }
+      },
+      "ListaTiposDocumento": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tipos_documento"
+        ],
+        "properties": {
+          "tipos_documento": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TipoDocumento"
+            }
+          }
+        }
       }
     }
   },
@@ -1928,7 +2266,7 @@
             "sesionHumana": []
           }
         ],
-        "description": "Solo SUPERADMIN y ADMINISTRADOR. Respuesta Cache-Control: no-store. Sin acceso para OPERADOR.",
+        "description": "Solo SUPERADMIN y ADMINISTRADOR. Respuesta Cache-Control: no-store. Sin acceso para OPERADOR. P1-B: nuevas asignaciones restringidas al catálogo habilitado, incluido RC. Los campos y requisitos restantes no cambian.",
         "summary": "Registrar Persona administrativa",
         "parameters": [
           {
@@ -2154,7 +2492,7 @@
             "sesionHumana": []
           }
         ],
-        "description": "Solo SUPERADMIN y ADMINISTRADOR. Respuesta Cache-Control: no-store. Sin acceso para OPERADOR.",
+        "description": "Solo SUPERADMIN y ADMINISTRADOR. Respuesta Cache-Control: no-store. Sin acceso para OPERADOR. P1-B: comparar el par documental efectivo; conservar legado idéntico/omitido. Cambio de tipo o número exige código habilitado. Se mantiene TipoPersona ACTIVO incluso al omitirlo.",
         "summary": "Actualizar campos administrativos de Persona",
         "parameters": [
           {
@@ -4267,6 +4605,240 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consultas/dashboard": {
+      "get": {
+        "summary": "Resumen de registros por perfil humano (P0 0010)",
+        "description": "Sin parámetros. S/A: eventos AUTORIZADOS de hoy Bogotá hasta t inclusivo, ocupación por último AUTORIZADO histórico (fecha, ID) y total real de Personas activas e inactivas. Incidencias autorizadas participan. O: solo conteos de incidencias y hasta 10 movimientos reducidos de jornada; no entradas/salidas globales, ocupación ni total de Personas. Lectura REPEATABLE READ en MySQL; no-store. Sin historia: ocupación nullable y presencia desconocida, no cero inventado; estimación limitada al historial disponible, sin certificar presencia física. GET puede actualizar actividad de sesión humana existente. No hay polling, migración ni integración Edge.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proyección cerrada según rol vigente en backend.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/DashboardAdministrativo"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DashboardOperador"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetros no admitidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión vigente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol/transporte no permitido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Consulta o sesión no disponible; sin detalles internos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/personas/tipos-documento": {
+      "get": {
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "description": "Solo SUPERADMIN y ADMINISTRADOR. Sin parámetros. Cache-Control: no-store. Códigos internos aprobados; habilitado_para_altas también autoriza nuevas asignaciones documentales en edición. Sin acceso para OPERADOR.",
+        "summary": "Consultar catálogo de tipos documentales",
+        "responses": {
+          "200": {
+            "description": "Seis tipos documentales en orden CC, TI, CE, PA, PPT, RC",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaTiposDocumento"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "description": "No almacenar esta respuesta autenticada.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "description": "No almacenar esta respuesta autenticada.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol, CSRF o transporte no autorizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "description": "No almacenar esta respuesta autenticada.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "description": "No almacenar esta respuesta autenticada.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetros no admitidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "description": "No almacenar esta respuesta autenticada.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
                 }
               }
             }

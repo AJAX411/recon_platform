@@ -8,26 +8,11 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 
 from recon_platform.extensions import db
-from recon_platform.identidad.servicios.cuentas import (
-    AutenticarUsuarioPlataforma,
-    BootstrapSuperadmin,
-    CambiarEstadoUsuario,
-    CambiarLoginUsuario,
-    CambiarRolUsuario,
-    ConflictoIntegridadIAM,
-    CrearUsuarioPlataforma,
-    RestablecerContrasenaUsuario,
-)
-from recon_platform.identidad.dominio.usuario_plataforma import UsuarioPlataforma
-from recon_platform.identidad.infraestructura.modelos import (
-    AuditoriaIAMModelo,
-    RolModelo,
-    UsuarioPlataformaModelo,
-)
-from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
-from recon_platform.identidad.infraestructura.unidad_trabajo import (
-    UnidadTrabajoIAMSQLAlchemy,
-)
+from recon_platform.identidad.servicio_cuentas import AutenticarUsuarioPlataforma, BootstrapSuperadmin, CambiarEstadoUsuario, CambiarLoginUsuario, CambiarRolUsuario, ConflictoIntegridadIAM, CrearUsuarioPlataforma, RestablecerContrasenaUsuario
+from recon_platform.identidad.usuario_plataforma import UsuarioPlataforma
+from recon_platform.identidad.modelos import AuditoriaIAMModelo, RolModelo, UsuarioPlataformaModelo
+from recon_platform.identidad.repositorio_cuentas import RepositorioIAMSQLAlchemy
+from recon_platform.identidad.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
 
 
 def test_repositorio_detecta_cuentas_existentes_y_superadmin_duplicado() -> None:

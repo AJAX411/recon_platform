@@ -1,0 +1,24 @@
+# Preparación Macro A. Contexto previsto: raíz del repositorio.
+# No ejecuta Docker ni retira archivos locales o fuentes.
+.git
+**/.env
+**/.env.*
+!**/.env.example
+**/.venv
+**/venv
+**/node_modules
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.coverage
+**/htmlcov
+**/*.egg-info
+frontend/legacy-react
+frontend/vanilla-candidato
+**/*.zip
+**/*.sql
+**/*.pem
+**/*.key
+**/Thumbs.db
+**/.DS_Store

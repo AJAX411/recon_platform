@@ -1,0 +1,16 @@
+# Contexto efectivo: raíz del repo; no incluye legado, candidata o instalación Windows.
+**
+!frontend/
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/index.html
+!frontend/vite.config.js
+!frontend/nginx.conf
+!frontend/src/
+!frontend/src/**
+frontend/legacy-react
+frontend/vanilla-candidato
+**/node_modules
+**/dist
+**/.env
+**/.env.*

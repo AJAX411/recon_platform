@@ -12,20 +12,16 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
-from recon_platform.accesos.servicios.eventos import (
-    ActorAcceso, ConflictoIdempotencia, RegistrarEventoManual, ResultadoRegistro,
-)
-from recon_platform.accesos.infraestructura.modelos_eventos import EventoAccesoModelo
-from recon_platform.accesos.infraestructura.repositorios_eventos import RepositorioEventosSQLAlchemy
-from recon_platform.accesos.infraestructura.unidad_trabajo_eventos import UnidadTrabajoEventosSQLAlchemy
-from recon_platform.accesos.infraestructura.modelos_puntos import PuntoAccesoModelo
-from recon_platform.auditoria.infraestructura.modelos import EventoAuditoriaModelo
-from recon_platform.auditoria.infraestructura.repositorios import (
-    RepositorioEventosSQLAlchemy as RepoAuditoria,
-)
+from recon_platform.accesos.servicio_eventos import ActorAcceso, ConflictoIdempotencia, RegistrarEventoManual, ResultadoRegistro
+from recon_platform.accesos.modelos_eventos import EventoAccesoModelo
+from recon_platform.accesos.repositorio_eventos import RepositorioEventosSQLAlchemy
+from recon_platform.accesos.unidad_trabajo_eventos import UnidadTrabajoEventosSQLAlchemy
+from recon_platform.accesos.modelos_puntos import PuntoAccesoModelo
+from recon_platform.auditoria.modelos import EventoAuditoriaModelo
+from recon_platform.auditoria.repositorio import RepositorioEventosSQLAlchemy as RepoAuditoria
 from recon_platform.extensions import db
-from recon_platform.identidad.infraestructura.modelos import RolModelo, UsuarioPlataformaModelo
-from recon_platform.personas.infraestructura.modelos import PersonaModelo, TipoPersonaModelo
+from recon_platform.identidad.modelos import RolModelo, UsuarioPlataformaModelo
+from recon_platform.personas.modelos import PersonaModelo, TipoPersonaModelo
 
 from conftest import _validar_conexion
 

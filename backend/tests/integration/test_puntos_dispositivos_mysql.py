@@ -8,23 +8,20 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
-from recon_platform.accesos.servicios.puntos import AdministrarPuntos
-from recon_platform.accesos.dominio.punto_acceso import PuntoAcceso
-from recon_platform.accesos.infraestructura.modelos_puntos import PuntoAccesoModelo
-from recon_platform.accesos.infraestructura.repositorios_puntos import RepositorioPuntosSQLAlchemy
-from recon_platform.auditoria.infraestructura.modelos import EventoAuditoriaModelo
-from recon_platform.auditoria.infraestructura.repositorios import RepositorioEventosSQLAlchemy
-from recon_platform.auditoria.infraestructura.unidad_trabajo import UnidadTrabajoSQLAlchemy
-from recon_platform.identidad.servicios.cuentas import BootstrapSuperadmin
-from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
-from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
-from recon_platform.integracion_edge.servicios.dispositivos import AdministrarDispositivos
-from recon_platform.integracion_edge.dominio.dispositivo_edge import DispositivoEdge
-from recon_platform.integracion_edge.infraestructura.repositorios import (
-    ConsultaPuntosSQLAlchemy,
-    RepositorioDispositivosSQLAlchemy,
-)
-from recon_platform.integracion_edge.infraestructura.modelos import DispositivoEdgeModelo
+from recon_platform.accesos.servicio_puntos import AdministrarPuntos
+from recon_platform.accesos.punto_acceso import PuntoAcceso
+from recon_platform.accesos.modelos_puntos import PuntoAccesoModelo
+from recon_platform.accesos.repositorio_puntos import RepositorioPuntosSQLAlchemy
+from recon_platform.auditoria.modelos import EventoAuditoriaModelo
+from recon_platform.auditoria.repositorio import RepositorioEventosSQLAlchemy
+from recon_platform.auditoria.unidad_trabajo import UnidadTrabajoSQLAlchemy
+from recon_platform.identidad.servicio_cuentas import BootstrapSuperadmin
+from recon_platform.identidad.repositorio_cuentas import RepositorioIAMSQLAlchemy
+from recon_platform.identidad.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
+from recon_platform.integracion_edge.servicio import AdministrarDispositivos
+from recon_platform.integracion_edge.dispositivo_edge import DispositivoEdge
+from recon_platform.integracion_edge.repositorio import ConsultaPuntosSQLAlchemy, RepositorioDispositivosSQLAlchemy
+from recon_platform.integracion_edge.modelos import DispositivoEdgeModelo
 
 pytestmark = pytest.mark.mysql_integration
 

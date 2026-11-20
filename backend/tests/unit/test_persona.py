@@ -2,8 +2,8 @@
 
 import pytest
 
-from recon_platform.personas.dominio.persona import Persona
-from recon_platform.personas.dominio.tipo_persona import TipoPersona
+from recon_platform.personas.persona import Persona
+from recon_platform.personas.tipo_persona import TipoPersona
 
 
 def nueva_persona(**cambios: object) -> Persona:

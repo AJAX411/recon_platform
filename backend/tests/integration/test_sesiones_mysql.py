@@ -10,16 +10,12 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from recon_platform.identidad.servicios.cuentas import (
-    BootstrapSuperadmin,
-    CambiarEstadoUsuario,
-    CrearUsuarioPlataforma,
-)
-from recon_platform.identidad.servicios.sesiones import GestionSesiones
-from recon_platform.identidad.infraestructura.modelos import SesionUsuarioModelo, UsuarioPlataformaModelo
-from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
-from recon_platform.identidad.infraestructura.repositorios_sesiones import RepositorioSesionesSQLAlchemy
-from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
+from recon_platform.identidad.servicio_cuentas import BootstrapSuperadmin, CambiarEstadoUsuario, CrearUsuarioPlataforma
+from recon_platform.identidad.servicio_sesiones import GestionSesiones
+from recon_platform.identidad.modelos import SesionUsuarioModelo, UsuarioPlataformaModelo
+from recon_platform.identidad.repositorio_cuentas import RepositorioIAMSQLAlchemy
+from recon_platform.identidad.repositorio_sesiones import RepositorioSesionesSQLAlchemy
+from recon_platform.identidad.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
 
 pytestmark = pytest.mark.mysql_integration
 AHORA = datetime(2026, 10, 16, 12, 0)

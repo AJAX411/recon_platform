@@ -1,5 +1,9 @@
 # Incremento 0009 — Estructura uniforme B controlada
 
+> Continuidad 18/11/2026: [ADR-D0-BE-01](./ADR_D0_BE_01_ORGANIZACION_CAPACIDADES.md)
+> refina ubicaciones internas; los enlaces de código apuntan al destino vigente.
+> Los resultados y estados de este incremento conservan su fecha histórica.
+
 **Estado:** IMPLEMENTADO LOCALMENTE, Bloque 2; incremento sin cerrar.
 **Ejecución:** 14/11/2026. Autorrevisión local; revisión independiente pendiente.
 **Baseline:** Contexto Maestro v1.7 OFICIAL (25/10/2026), resoluciones IAM,

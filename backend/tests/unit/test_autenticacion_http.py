@@ -11,27 +11,12 @@ from sqlalchemy import select
 
 from recon_platform import create_app
 from recon_platform.extensions import db
-from recon_platform.identidad.controladores import seguridad
-from recon_platform.identidad.servicios.cuentas import (
-    BootstrapSuperadmin,
-    CambiarEstadoUsuario,
-    CambiarRolUsuario,
-    ConsultarUsuarioPlataforma,
-    CrearUsuarioPlataforma,
-    ListarRoles,
-    ListarUsuariosPlataforma,
-    PermisoDenegado,
-    RestablecerContrasenaUsuario,
-)
-from recon_platform.identidad.infraestructura.modelos import (
-    AuditoriaIAMModelo,
-    RolModelo,
-    SesionUsuarioModelo,
-    UsuarioPlataformaModelo,
-)
-from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
-from recon_platform.identidad.infraestructura.repositorios_sesiones import RepositorioSesionesSQLAlchemy
-from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
+from recon_platform.identidad import seguridad_http as seguridad
+from recon_platform.identidad.servicio_cuentas import BootstrapSuperadmin, CambiarEstadoUsuario, CambiarRolUsuario, ConsultarUsuarioPlataforma, CrearUsuarioPlataforma, ListarRoles, ListarUsuariosPlataforma, PermisoDenegado, RestablecerContrasenaUsuario
+from recon_platform.identidad.modelos import AuditoriaIAMModelo, RolModelo, SesionUsuarioModelo, UsuarioPlataformaModelo
+from recon_platform.identidad.repositorio_cuentas import RepositorioIAMSQLAlchemy
+from recon_platform.identidad.repositorio_sesiones import RepositorioSesionesSQLAlchemy
+from recon_platform.identidad.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
 
 CLAVE = "Clave-Ficticia-Prueba-2026!"
 INICIO = datetime(2026, 10, 16, 10, 0)

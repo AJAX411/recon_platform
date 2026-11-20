@@ -2,10 +2,7 @@
 
 import pytest
 
-from recon_platform.personas.dominio.tipo_persona import (
-    TIPOS_PERSONA_INICIALES,
-    TipoPersona,
-)
+from recon_platform.personas.tipo_persona import TIPOS_PERSONA_INICIALES, TipoPersona
 
 
 @pytest.mark.parametrize(

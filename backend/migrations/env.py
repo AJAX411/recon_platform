@@ -3,12 +3,12 @@
 from alembic import context
 from flask import current_app
 
-from recon_platform.identidad.infraestructura import modelos as modelos_iam  # noqa: F401
-from recon_platform.personas.infraestructura import modelos  # noqa: F401
-from recon_platform.accesos.infraestructura import modelos_puntos  # noqa: F401
-from recon_platform.accesos.infraestructura import modelos_eventos  # noqa: F401
-from recon_platform.integracion_edge.infraestructura import modelos as modelos_dispositivos  # noqa: F401
-from recon_platform.auditoria.infraestructura import modelos as modelos_auditoria  # noqa: F401
+from recon_platform.identidad import modelos as modelos_iam  # noqa: F401
+from recon_platform.personas import modelos  # noqa: F401
+from recon_platform.accesos import modelos_puntos  # noqa: F401
+from recon_platform.accesos import modelos_eventos  # noqa: F401
+from recon_platform.integracion_edge import modelos as modelos_dispositivos  # noqa: F401
+from recon_platform.auditoria import modelos as modelos_auditoria  # noqa: F401
 
 config = context.config
 db = current_app.extensions["migrate"].db

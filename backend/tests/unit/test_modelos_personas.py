@@ -2,10 +2,7 @@
 
 from sqlalchemy import UniqueConstraint
 
-from recon_platform.personas.infraestructura.modelos import (
-    PersonaModelo,
-    TipoPersonaModelo,
-)
+from recon_platform.personas.modelos import PersonaModelo, TipoPersonaModelo
 
 
 def test_persona_declara_fk_y_unicidades_independientes() -> None:

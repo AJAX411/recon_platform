@@ -5,36 +5,11 @@ from typing import cast
 
 import pytest
 
-from recon_platform.identidad.servicios.cuentas import (
-    AutenticarUsuarioPlataforma,
-    BootstrapSuperadmin,
-    CambiarEstadoUsuario,
-    CambiarLoginUsuario,
-    CambiarRolUsuario,
-    CrearUsuarioPlataforma,
-    ConsultarUsuarioPlataforma,
-    ConflictoIntegridadIAM,
-    ListarRoles,
-    ListarUsuariosPlataforma,
-    PermisoDenegado,
-    RestablecerContrasenaUsuario,
-    RolNoExiste,
-    UsuarioDuplicado,
-)
-from recon_platform.identidad.dominio.credenciales import (
-    generar_hash_contrasena,
-    verificar_contrasena,
-)
-from recon_platform.identidad.dominio.rol import Rol
-from recon_platform.identidad.dominio.usuario_plataforma import (
-    UsuarioPlataforma,
-    normalizar_login,
-)
-from recon_platform.identidad.infraestructura.modelos import (
-    AuditoriaIAMModelo,
-    RolModelo,
-    UsuarioPlataformaModelo,
-)
+from recon_platform.identidad.servicio_cuentas import AutenticarUsuarioPlataforma, BootstrapSuperadmin, CambiarEstadoUsuario, CambiarLoginUsuario, CambiarRolUsuario, CrearUsuarioPlataforma, ConsultarUsuarioPlataforma, ConflictoIntegridadIAM, ListarRoles, ListarUsuariosPlataforma, PermisoDenegado, RestablecerContrasenaUsuario, RolNoExiste, UsuarioDuplicado
+from recon_platform.identidad.credenciales import generar_hash_contrasena, verificar_contrasena
+from recon_platform.identidad.rol import Rol
+from recon_platform.identidad.usuario_plataforma import UsuarioPlataforma, normalizar_login
+from recon_platform.identidad.modelos import AuditoriaIAMModelo, RolModelo, UsuarioPlataformaModelo
 from recon_platform import create_app
 
 CLAVE_FICTICIA = "Solo-Prueba-Ficticia-2026!"

@@ -10,9 +10,9 @@ import textwrap
 from datetime import timedelta
 
 from recon_platform import composicion
-from recon_platform.accesos.controladores import eventos
+from recon_platform.accesos import controlador_eventos as eventos
 from recon_platform.extensions import db
-from recon_platform.identidad.controladores import seguridad
+from recon_platform.identidad import seguridad_http as seguridad
 
 # Fixture HTTP existente: datos ficticios y SQLite exclusivamente en memoria.
 from test_autenticacion_http import _login, entorno  # noqa: F401
@@ -48,13 +48,22 @@ def test_primer_registro_aislado_conserva_modelos_metadata_y_mapa_http():
             "defaults": r.defaults, "strict_slashes": r.strict_slashes,
             "subdomain": r.subdomain, "redirect_to": r.redirect_to,
             "automatic_options": r.provide_automatic_options,
-        } for r in app.url_map.iter_rules()], key=lambda r: (r["rule"], r["endpoint"])),
-            "blueprints": list(app.blueprints),
-            "before": {str(k): [f.__name__ for f in fs] for k,fs in app.before_request_funcs.items()},
-            "after": {str(k): [f.__name__ for f in fs] for k,fs in app.after_request_funcs.items()},
+        } for r in app.url_map.iter_rules() if not r.endpoint.startswith("consultas.")
+            and r.endpoint != "administracion_personas.listar_tipos_documento"], key=lambda r: (r["rule"], r["endpoint"])),
+            "blueprints": [k for k in app.blueprints if k != "consultas"],
+            "before": {str(k): [f.__name__ for f in fs] for k,fs in app.before_request_funcs.items() if k != "consultas"},
+            "after": {str(k): [f.__name__ for f in fs] for k,fs in app.after_request_funcs.items() if k != "consultas"},
             "resources": {k: {"static_folder": b.static_folder, "template_folder": b.template_folder}
-                for k,b in app.blueprints.items()},
+                for k,b in app.blueprints.items() if k != "consultas"},
         }
+        # P0 agrega una sola lectura. La firma histórica de 0009 sigue congelada.
+        nuevas = [r for r in app.url_map.iter_rules() if r.endpoint.startswith("consultas.")]
+        assert len(nuevas) == 1 and nuevas[0].rule == "/api/v1/consultas/dashboard"
+        assert nuevas[0].methods == {"GET", "HEAD", "OPTIONS"}
+        catalogo = [r for r in app.url_map.iter_rules()
+                    if r.endpoint == "administracion_personas.listar_tipos_documento"]
+        assert len(catalogo) == 1 and catalogo[0].rule == "/api/v1/personas/tipos-documento"
+        assert catalogo[0].methods == {"GET", "HEAD", "OPTIONS"}
         mappers = list(db.Model.registry.mappers)
         assert len(mappers) == 11 and len(db.metadata.tables) == 11
         assert "alembic_version" not in db.metadata.tables
@@ -119,7 +128,15 @@ def test_reloj_canonico_expira_endpoint_y_guard_con_un_solo_parche(entorno):  # 
 def test_composicion_y_nucleo_no_dependen_de_controladores_o_frameworks():
     raiz = Path(__file__).resolve().parents[2] / "src/recon_platform"
     for archivo in raiz.rglob("*.py"):
-        es_nucleo = bool({"servicios", "puertos", "dominio"} & set(archivo.relative_to(raiz).parts))
+        # ADR-D0-BE-01 conserva las capas lógicas en archivos de cada capacidad.
+        # Durante el piloto también se comprueban las capacidades aún no trasladadas.
+        es_nucleo = (
+            bool({"servicios", "puertos", "dominio"} & set(archivo.relative_to(raiz).parts))
+            or archivo.stem.startswith(("servicio", "contratos"))
+            or archivo.stem in {"persona", "tipo_persona", "tipos_documento", "rol",
+                                "credenciales", "sesion", "usuario_plataforma", "limitador",
+                                "punto_acceso", "evento_acceso", "evento_auditoria", "dispositivo_edge"}
+        )
         if archivo.name != "composicion.py" and not es_nucleo:
             continue
         for nodo in ast.walk(ast.parse(archivo.read_text(encoding="utf-8"))):
@@ -129,7 +146,8 @@ def test_composicion_y_nucleo_no_dependen_de_controladores_o_frameworks():
                 modulos = [nombre.name for nombre in nodo.names]
             else:
                 continue
-            assert all(".controladores" not in nombre for nombre in modulos), archivo
+            assert all(".controlador" not in nombre and ".seguridad_http" not in nombre
+                       for nombre in modulos), archivo
             if es_nucleo:
                 assert all(nombre.split(".")[0] not in {"flask", "sqlalchemy", "flask_sqlalchemy"}
                            for nombre in modulos), archivo
@@ -137,7 +155,7 @@ def test_composicion_y_nucleo_no_dependen_de_controladores_o_frameworks():
 
 def test_repositorios_y_composicion_no_confirman_transacciones():
     raiz = Path(__file__).resolve().parents[2] / "src/recon_platform"
-    archivos = [raiz / "composicion.py", *raiz.rglob("repositorios*.py")]
+    archivos = [raiz / "composicion.py", *raiz.rglob("repositorio*.py")]
     for archivo in archivos:
         for nodo in ast.walk(ast.parse(archivo.read_text(encoding="utf-8"))):
             if isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Attribute):

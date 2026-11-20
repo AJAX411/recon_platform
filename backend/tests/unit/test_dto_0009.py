@@ -5,23 +5,23 @@ from dataclasses import dataclass, replace
 
 import pytest
 
-from recon_platform.accesos.dto.eventos import representar_evento_manual, validar_cuerpo_manual
-from recon_platform.accesos.dto.puntos import representar_punto
-from recon_platform.accesos.dominio.evento_acceso import EventoAcceso
-from recon_platform.accesos.dominio.punto_acceso import PuntoAcceso
-from recon_platform.auditoria.dto.eventos import representar_auditoria
-from recon_platform.auditoria.dominio.evento_auditoria import EventoAuditoria
-from recon_platform.identidad.dto.autenticacion import representar_identidad, validar_login
-from recon_platform.identidad.dto.usuarios import representar_usuario, validar_cuerpo_exacto
-from recon_platform.identidad.dominio.credenciales import generar_hash_contrasena
-from recon_platform.identidad.dominio.rol import Rol
-from recon_platform.identidad.dominio.usuario_plataforma import UsuarioPlataforma
-from recon_platform.identidad.servicios.cuentas import IdentidadAutenticada
-from recon_platform.integracion_edge.dto.dispositivos import representar_dispositivo
-from recon_platform.integracion_edge.dominio.dispositivo_edge import DispositivoEdge
-from recon_platform.personas.dto.personas import representar_persona, validar_cuerpo_persona
-from recon_platform.personas.dominio.persona import Persona
-from recon_platform.personas.dominio.tipo_persona import TipoPersona
+from recon_platform.accesos.dto_eventos import representar_evento_manual, validar_cuerpo_manual
+from recon_platform.accesos.dto_puntos import representar_punto
+from recon_platform.accesos.evento_acceso import EventoAcceso
+from recon_platform.accesos.punto_acceso import PuntoAcceso
+from recon_platform.auditoria.dto import representar_auditoria
+from recon_platform.auditoria.evento_auditoria import EventoAuditoria
+from recon_platform.identidad.dto_auth import representar_identidad, validar_login
+from recon_platform.identidad.dto_usuarios import representar_usuario, validar_cuerpo_exacto
+from recon_platform.identidad.credenciales import generar_hash_contrasena
+from recon_platform.identidad.rol import Rol
+from recon_platform.identidad.usuario_plataforma import UsuarioPlataforma
+from recon_platform.identidad.servicio_cuentas import IdentidadAutenticada
+from recon_platform.integracion_edge.dto import representar_dispositivo
+from recon_platform.integracion_edge.dispositivo_edge import DispositivoEdge
+from recon_platform.personas.dto import representar_persona, validar_cuerpo_persona
+from recon_platform.personas.persona import Persona
+from recon_platform.personas.tipo_persona import TipoPersona
 
 
 @dataclass(frozen=True, slots=True)

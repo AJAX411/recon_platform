@@ -3,24 +3,28 @@
 from collections.abc import Callable
 from datetime import datetime
 
-from recon_platform.accesos.servicios.puntos import AdministrarPuntos
-from recon_platform.accesos.servicios.eventos import ConsultarEventosAcceso, RegistrarEventoManual
-from recon_platform.accesos.infraestructura.repositorios_puntos import RepositorioPuntosSQLAlchemy
-from recon_platform.accesos.infraestructura.repositorios_eventos import RepositorioEventosSQLAlchemy
-from recon_platform.accesos.infraestructura.unidad_trabajo_eventos import UnidadTrabajoEventosSQLAlchemy
-from recon_platform.auditoria.servicios.eventos import AuditoriaGeneral
-from recon_platform.auditoria.infraestructura.repositorios import RepositorioEventosSQLAlchemy as RepositorioAuditoria
-from recon_platform.auditoria.infraestructura.unidad_trabajo import UnidadTrabajoSQLAlchemy
+from recon_platform.accesos.servicio_puntos import AdministrarPuntos
+from recon_platform.accesos.servicio_eventos import ConsultarEventosAcceso, RegistrarEventoManual
+from recon_platform.accesos.repositorio_puntos import RepositorioPuntosSQLAlchemy
+from recon_platform.accesos.repositorio_eventos import RepositorioEventosSQLAlchemy
+from recon_platform.accesos.unidad_trabajo_eventos import UnidadTrabajoEventosSQLAlchemy
+from recon_platform.auditoria.servicio import AuditoriaGeneral
+from recon_platform.auditoria.repositorio import RepositorioEventosSQLAlchemy as RepositorioAuditoria
+from recon_platform.auditoria.unidad_trabajo import UnidadTrabajoSQLAlchemy
 from recon_platform.extensions import db
-from recon_platform.identidad.servicios.sesiones import GestionSesiones
-from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
-from recon_platform.identidad.infraestructura.repositorios_sesiones import RepositorioSesionesSQLAlchemy
-from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
-from recon_platform.integracion_edge.servicios.dispositivos import AdministrarDispositivos
-from recon_platform.integracion_edge.infraestructura.repositorios import ConsultaPuntosSQLAlchemy, RepositorioDispositivosSQLAlchemy
-from recon_platform.personas.servicios.personas import AdministrarPersonas
-from recon_platform.personas.infraestructura.repositorios import RepositorioPersonasSQLAlchemy, RepositorioTiposPersonaSQLAlchemy
-from recon_platform.personas.infraestructura.unidad_trabajo import UnidadTrabajoSQLAlchemy as UnidadTrabajoPersonasSQLAlchemy
+from recon_platform.identidad.servicio_sesiones import GestionSesiones
+from recon_platform.identidad.repositorio_cuentas import RepositorioIAMSQLAlchemy
+from recon_platform.identidad.repositorio_sesiones import RepositorioSesionesSQLAlchemy
+from recon_platform.identidad.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
+from recon_platform.integracion_edge.servicio import AdministrarDispositivos
+from recon_platform.integracion_edge.repositorio import ConsultaPuntosSQLAlchemy, RepositorioDispositivosSQLAlchemy
+from recon_platform.personas.servicio import AdministrarPersonas
+from recon_platform.personas.repositorio import RepositorioPersonasSQLAlchemy, RepositorioTiposPersonaSQLAlchemy
+from recon_platform.personas.unidad_trabajo import UnidadTrabajoSQLAlchemy as UnidadTrabajoPersonasSQLAlchemy
+from recon_platform.accesos.lecturas import LecturaAccesosSQLAlchemy
+from recon_platform.personas.lecturas import LecturaPersonasSQLAlchemy
+from recon_platform.consultas.unidad_lectura import UnidadLecturaSQLAlchemy
+from recon_platform.consultas.servicio import ConsultarDashboard
 
 
 def auditoria() -> AuditoriaGeneral:
@@ -64,3 +68,8 @@ def crear_consulta_eventos(reloj: Callable[[], datetime]) -> ConsultarEventosAcc
 def crear_registro_manual(reloj: Callable[[], datetime]) -> RegistrarEventoManual:
     return RegistrarEventoManual(RepositorioEventosSQLAlchemy(db.session),
         RepositorioAuditoria(db.session), UnidadTrabajoEventosSQLAlchemy(db.session), reloj)
+
+
+def crear_dashboard(reloj: Callable[[], datetime]) -> ConsultarDashboard:
+    return ConsultarDashboard(LecturaAccesosSQLAlchemy(db.session),
+        LecturaPersonasSQLAlchemy(db.session), UnidadLecturaSQLAlchemy(db.session), reloj)

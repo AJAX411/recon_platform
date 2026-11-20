@@ -1,0 +1,5 @@
+# Runtime exclusivo Linux: rama mantenida según política oficial del servidor.
+# No altera Flask/ORM ni el entorno Windows; compatibilidad comprobada en ensayo Docker.
+gunicorn==25.3.0
+# Versión observada localmente; dependencia de Gunicorn fijada sin resolver en red.
+packaging==26.3

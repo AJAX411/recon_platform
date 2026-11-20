@@ -6,23 +6,20 @@ from datetime import UTC
 import pytest
 from sqlalchemy import func, select
 
-from recon_platform.accesos.servicios.puntos import AdministrarPuntos, PermisoPuntoDenegado
-from recon_platform.accesos.dominio.punto_acceso import PuntoAcceso
-from recon_platform.accesos.infraestructura.modelos_puntos import PuntoAccesoModelo
-from recon_platform.accesos.infraestructura.repositorios_puntos import RepositorioPuntosSQLAlchemy
-from recon_platform.auditoria.infraestructura.modelos import EventoAuditoriaModelo
-from recon_platform.auditoria.infraestructura.repositorios import RepositorioEventosSQLAlchemy
-from recon_platform.auditoria.infraestructura.unidad_trabajo import UnidadTrabajoSQLAlchemy
+from recon_platform.accesos.servicio_puntos import AdministrarPuntos, PermisoPuntoDenegado
+from recon_platform.accesos.punto_acceso import PuntoAcceso
+from recon_platform.accesos.modelos_puntos import PuntoAccesoModelo
+from recon_platform.accesos.repositorio_puntos import RepositorioPuntosSQLAlchemy
+from recon_platform.auditoria.modelos import EventoAuditoriaModelo
+from recon_platform.auditoria.repositorio import RepositorioEventosSQLAlchemy
+from recon_platform.auditoria.unidad_trabajo import UnidadTrabajoSQLAlchemy
 from recon_platform.extensions import db
-from recon_platform.identidad.servicios.cuentas import CrearUsuarioPlataforma
-from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
-from recon_platform.identidad.infraestructura.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
-from recon_platform.integracion_edge.infraestructura.modelos import DispositivoEdgeModelo
-from recon_platform.integracion_edge.infraestructura.repositorios import RepositorioDispositivosSQLAlchemy
-from recon_platform.integracion_edge.dominio.dispositivo_edge import (
-    DispositivoEdge,
-    permite_nueva_autorizacion,
-)
+from recon_platform.identidad.servicio_cuentas import CrearUsuarioPlataforma
+from recon_platform.identidad.repositorio_cuentas import RepositorioIAMSQLAlchemy
+from recon_platform.identidad.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
+from recon_platform.integracion_edge.modelos import DispositivoEdgeModelo
+from recon_platform.integracion_edge.repositorio import RepositorioDispositivosSQLAlchemy
+from recon_platform.integracion_edge.dispositivo_edge import DispositivoEdge, permite_nueva_autorizacion
 
 from test_autenticacion_http import CLAVE, _login, entorno  # noqa: F401
 
@@ -277,7 +274,7 @@ def test_denegacion_no_se_disfraza_si_falla_auditoria(entorno_incremento, monkey
     headers = _autenticar(operador, "operador.ficticio")
     def fallar(*_args, **_kwargs):
         raise RuntimeError("Detalle interno ficticio")
-    monkeypatch.setattr("recon_platform.auditoria.servicios.eventos.AuditoriaGeneral.registrar_fallo", fallar)
+    monkeypatch.setattr("recon_platform.auditoria.servicio.AuditoriaGeneral.registrar_fallo", fallar)
     respuesta = operador.post(PUNTOS, json={"codigo": "P-01", "nombre": "Denegado"}, headers=headers)
     assert respuesta.status_code == 503
     assert "Detalle interno ficticio" not in respuesta.get_data(as_text=True)

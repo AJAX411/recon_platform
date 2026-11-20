@@ -14,8 +14,8 @@ from sqlalchemy import text
 
 from recon_platform import create_app
 from recon_platform.extensions import db
-from recon_platform.identidad.infraestructura.modelos import SesionUsuarioModelo
-from recon_platform.identidad.infraestructura.repositorios_sesiones import RepositorioSesionesSQLAlchemy
+from recon_platform.identidad.modelos import SesionUsuarioModelo
+from recon_platform.identidad.repositorio_sesiones import RepositorioSesionesSQLAlchemy
 from verificar_recon_dev_0002 import DESTINO, TABLAS, VARIABLES, VerificacionFallida
 from verificar_recon_dev_0003 import (
     verificar_datos_previos, verificar_esquema, verificar_sesion_nueva,

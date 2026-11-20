@@ -12,30 +12,13 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from recon_platform.identidad.servicios.cuentas import (
-    BootstrapSuperadmin,
-    CambiarRolUsuario,
-    ConsultarUsuarioPlataforma,
-    CrearUsuarioPlataforma,
-    ListarRoles,
-    ListarUsuariosPlataforma,
-    PermisoDenegado,
-)
-from recon_platform.identidad.dominio.credenciales import (
-    generar_hash_contrasena,
-    verificar_contrasena,
-)
-from recon_platform.identidad.dominio.usuario_plataforma import UsuarioPlataforma
-from recon_platform.identidad.infraestructura.modelos import (
-    AuditoriaIAMModelo,
-    RolModelo,
-    UsuarioPlataformaModelo,
-)
-from recon_platform.identidad.infraestructura.repositorios import RepositorioIAMSQLAlchemy
-from recon_platform.identidad.infraestructura.unidad_trabajo import (
-    UnidadTrabajoIAMSQLAlchemy,
-)
-from recon_platform.personas.infraestructura.modelos import PersonaModelo
+from recon_platform.identidad.servicio_cuentas import BootstrapSuperadmin, CambiarRolUsuario, ConsultarUsuarioPlataforma, CrearUsuarioPlataforma, ListarRoles, ListarUsuariosPlataforma, PermisoDenegado
+from recon_platform.identidad.credenciales import generar_hash_contrasena, verificar_contrasena
+from recon_platform.identidad.usuario_plataforma import UsuarioPlataforma
+from recon_platform.identidad.modelos import AuditoriaIAMModelo, RolModelo, UsuarioPlataformaModelo
+from recon_platform.identidad.repositorio_cuentas import RepositorioIAMSQLAlchemy
+from recon_platform.identidad.unidad_trabajo import UnidadTrabajoIAMSQLAlchemy
+from recon_platform.personas.modelos import PersonaModelo
 
 pytestmark = pytest.mark.mysql_integration
 

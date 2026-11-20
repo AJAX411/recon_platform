@@ -12,20 +12,12 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from recon_platform.personas.servicios.personas import ConsultarPersona, PersonaDuplicada, RegistrarPersona
-from recon_platform.personas.dominio.persona import Persona
-from recon_platform.personas.dominio.tipo_persona import TipoPersona
-from recon_platform.personas.infraestructura.modelos import (
-    PersonaModelo,
-    TipoPersonaModelo,
-)
-from recon_platform.personas.infraestructura.repositorios import (
-    RepositorioPersonasSQLAlchemy,
-    RepositorioTiposPersonaSQLAlchemy,
-)
-from recon_platform.personas.infraestructura.unidad_trabajo import (
-    UnidadTrabajoSQLAlchemy,
-)
+from recon_platform.personas.servicio import ConsultarPersona, PersonaDuplicada, RegistrarPersona
+from recon_platform.personas.persona import Persona
+from recon_platform.personas.tipo_persona import TipoPersona
+from recon_platform.personas.modelos import PersonaModelo, TipoPersonaModelo
+from recon_platform.personas.repositorio import RepositorioPersonasSQLAlchemy, RepositorioTiposPersonaSQLAlchemy
+from recon_platform.personas.unidad_trabajo import UnidadTrabajoSQLAlchemy
 
 pytestmark = pytest.mark.mysql_integration
 

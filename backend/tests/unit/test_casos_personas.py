@@ -5,17 +5,9 @@ from typing import cast
 
 import pytest
 
-from recon_platform.personas.servicios.personas import (
-    ConsultarPersona,
-    ActorPersonas,
-    AdministrarPersonas,
-    PersonaNoExiste,
-    PersonaDuplicada,
-    RegistrarPersona,
-    TipoPersonaNoExiste,
-)
-from recon_platform.personas.dominio.persona import Persona
-from recon_platform.personas.dominio.tipo_persona import TipoPersona
+from recon_platform.personas.servicio import ConsultarPersona, ActorPersonas, AdministrarPersonas, PersonaNoExiste, PersonaDuplicada, RegistrarPersona, TipoPersonaNoExiste
+from recon_platform.personas.persona import Persona
+from recon_platform.personas.tipo_persona import TipoPersona
 
 
 class RepositorioFalso:
