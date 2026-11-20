@@ -1,3 +1,4 @@
+/** Estado del registro manual: protege preflight/envío y reutiliza una clave idempotente ante incertidumbre, sin reenvío automático. */
 import { ApiError } from '../api/http.js'
 import { approximateTime } from './projections.js'
 

@@ -1,4 +1,5 @@
-"""Servicios y casos de uso existentes."""
+"""Casos de uso de Puntos: alta, edición, estado y consulta por permisos.
+Coordina repositorio y auditoría sin acoplar reglas administrativas a Flask."""
 
 from recon_platform.accesos.punto_acceso import PuntoAcceso, texto
 from recon_platform.auditoria.evento_auditoria import EventoAuditoria

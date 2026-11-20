@@ -38,8 +38,8 @@ y Compose config --quiet PASS con fixtures inertes externas. No se instalan
 dependencias para probar esto. No hay motor Linux disponible ni imágenes
 confirmadas; no se ejecutó hadolint/nginx -t, build, up, TLS o E2E Docker.
 
-La [guía Docker](../../deploy/README.md) y el
-[contrato de despliegue](../azure/CONTRATO_DESPLIEGUE.md) detallan arquitectura,
+La [guía Docker](../../../deploy/README.md) y el
+[contrato de despliegue](../../azure/CONTRATO_DESPLIEGUE.md) detallan arquitectura,
 separación de secretos/gates, imágenes/digests pendientes, procedimientos de
 inicialización/migraciones y cierre sin borrar volumen. Preparación estática
 no equivale a contenedores reproducidos o versión demostrable E2E.

@@ -1,4 +1,5 @@
-"""Repositorios SQLAlchemy sin commits propios."""
+"""Adaptador SQLAlchemy de auditoría general.
+Agrega/consulta eventos y hace flush; la unidad de trabajo decide confirmar."""
 
 from datetime import UTC, datetime
 

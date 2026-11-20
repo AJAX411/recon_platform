@@ -1,3 +1,4 @@
+/** Coordinación de confirmación y escritura: bloqueo de doble envío, navegación y registro de resultados inciertos por identidad. */
 import { confirmDialog } from './ConfirmDialog.js'
 import { message } from './dom.js'
 

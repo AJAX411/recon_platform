@@ -1,3 +1,4 @@
+/** Marco autenticado con menú por rol, campana y Perfil de solo lectura; conserva foco al abrir acciones de cuenta. */
 import { allows } from '../auth/permissions.js'
 import { button, dataGrid, el, link, message } from './dom.js'
 import { openDialog } from './Dialog.js'

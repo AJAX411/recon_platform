@@ -1,4 +1,5 @@
-"""Puertos de aplicación existentes."""
+"""Puerto de almacenamiento de sesiones humanas opacas.
+Guarda digests y vigencia, actualiza actividad y revoca sin exponer tokens en claro."""
 
 from datetime import datetime
 from typing import Protocol

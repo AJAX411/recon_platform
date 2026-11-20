@@ -1,6 +1,6 @@
 # Incremento 0010 — P1-B: catálogo documental y V2
 
-> Continuidad 18/11/2026: [ADR-D0-BE-01](./ADR_D0_BE_01_ORGANIZACION_CAPACIDADES.md)
+> Continuidad 18/11/2026: [ADR-D0-BE-01](../../../../backend/ADR_D0_BE_01_ORGANIZACION_CAPACIDADES.md)
 > refina ubicaciones internas; los enlaces de código apuntan al destino vigente.
 > Los resultados y estados de este incremento conservan su fecha histórica.
 
@@ -10,7 +10,7 @@ con reservas. El encargo expreso del responsable ratifica V2 y seis códigos.
 
 ## Catálogo y compatibilidad
 
-[Fuente inmutable](./src/recon_platform/personas/tipos_documento.py):
+[Fuente inmutable](../../../../backend/src/recon_platform/personas/tipos_documento.py):
 CC — Cédula de ciudadanía; TI — Tarjeta de identidad; CE — Cédula de extranjería;
 PA — Pasaporte; PPT — Permiso por Protección Temporal; RC — Registro civil de
 nacimiento, en ese orden, todos habilitados. Son códigos internos del proyecto;
@@ -22,7 +22,7 @@ sin parámetros, no-store; 200 `tipos_documento` con `codigo`, `nombre` y
 La habilitación también se aplica a nuevas asignaciones documentales en edición.
 GET `/personas/tipos` conserva su catálogo distinto de TipoPersona.
 
-[Casos de uso](./src/recon_platform/personas/servicio.py): ambas altas
+[Casos de uso](../../../../backend/src/recon_platform/personas/servicio.py): ambas altas
 exigen código habilitado. PATCH compara el par normalizado tipo/número con el
 anterior; si cambia cualquiera, exige tipo resultante habilitado. Si no cambia,
 conserva legado. Lecturas, filtros, respuestas y constructor universal no cierran
@@ -31,7 +31,7 @@ el legado. Se mantiene trim exterior, sin uppercase/equivalencias/formato nuevo.
 La compatibilidad de entrada se estrecha deliberadamente: antes podían
 registrarse códigos libres nuevos; ahora se rechazan con 400. No cambian campos
 de Persona, permisos, 201/Location, CSRF, integridad, auditoría o transacción.
-El [OpenAPI](./openapi.json) contiene 35 operaciones, una nueva respecto a P0+A.
+El [OpenAPI](../../../../backend/openapi.json) contiene 35 operaciones, una nueva respecto a P0+A.
 La regla OBS-P1A-01 sigue vigente: TipoPersona ACTIVO al actualizar incluso omitido.
 
 ## React y V2
@@ -51,7 +51,7 @@ Cuatro métricas S/A, cobertura/frescura y hora aproximada O se mantienen.
 
 ## Pruebas y límites
 
-[Tests catálogo/backend](./tests/unit/test_catalogo_documental_0010.py) y tests
+[Tests catálogo/backend](../../../../backend/tests/unit/test_catalogo_documental_0010.py) y tests
 frontend cubren reglas/HTTP/DOM con dobles y SQLite exclusivamente en memoria.
 Los resultados ejecutados, barreras y hashes se entregan en el paquete externo;
 no confundirlos con MySQL, navegador autenticado o medición en píxeles.

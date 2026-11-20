@@ -1,4 +1,5 @@
-"""Repositorios SQLAlchemy sin commits propios."""
+"""Adaptadores SQLAlchemy de metadatos Edge y consulta de Puntos.
+Hidratan entidades y traducen integridad sin commits independientes."""
 
 from datetime import UTC, datetime
 

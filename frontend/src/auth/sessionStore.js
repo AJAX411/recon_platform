@@ -1,3 +1,4 @@
+/** Sesión del cliente en memoria: login/me definen identidad; épocas descartan respuestas antiguas y logout invalida lecturas. */
 import { ROLES } from './permissions.js'
 
 export function createSessionStore(api) {

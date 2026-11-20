@@ -194,4 +194,9 @@ def test_openapi_cierra_solo_altas_y_no_respuestas_patch_o_filtros():
     filtro = next(p for p in api["paths"]["/personas"]["get"]["parameters"] if p["name"] == "tipo_documento")
     assert "enum" not in filtro["schema"]
     assert "/personas/tipos-documento" in api["paths"]
-    assert sum(m in {"get", "post", "patch", "put", "delete"} for p in api["paths"].values() for m in p) == 35
+    assert sum(m in {"get", "post", "patch", "put", "delete"} for p in api["paths"].values() for m in p) == 36
+    login = api["paths"]["/iam/usuarios/{usuario_id}/login"]["patch"]
+    cuerpo = login["requestBody"]["content"]["application/json"]["schema"]
+    assert cuerpo["required"] == ["login"] and cuerpo["additionalProperties"] is False
+    assert set(cuerpo["properties"]) == {"login"}
+    assert {"200", "400", "401", "403", "404", "409", "503"} <= set(login["responses"])

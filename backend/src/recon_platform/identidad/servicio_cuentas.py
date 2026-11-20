@@ -49,6 +49,7 @@ class IdentidadAutenticada:
 
 @contextmanager
 def _transaccion(unidad: UnidadTrabajoIAM) -> Iterator[None]:
+    """Confirma una sola vez; cualquier excepción revierte la operación completa."""
     try:
         yield
         unidad.confirmar()
@@ -268,6 +269,7 @@ class CambiarEstadoUsuario:
 
 
 class CambiarLoginUsuario:
+    """Cambia solo login de cuenta administrable; unicidad y auditoría comparten transacción."""
     def __init__(self, repositorio: RepositorioIAM, unidad: UnidadTrabajoIAM) -> None:
         self.repositorio = repositorio
         self.unidad = unidad

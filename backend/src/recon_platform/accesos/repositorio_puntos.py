@@ -1,4 +1,5 @@
-"""Repositorios SQLAlchemy sin commits propios."""
+"""Adaptador SQLAlchemy del catálogo de Puntos.
+Traduce errores de integridad y devuelve entidades sin commits autónomos."""
 
 from datetime import UTC, datetime
 

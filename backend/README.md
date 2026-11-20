@@ -42,7 +42,7 @@ certifican MySQL ni producción ni cierran 0010.
 ## P1-B 0010 — catálogo y V2, candidato local 17/11/2026
 
 El encargo del responsable ratifica catálogo CC/TI/CE/PA/PPT/RC, compatibilidad
-histórica y V2. [Especificación P1-B](./INCREMENTO_0010_P1B.md) y
+histórica y V2. [Especificación P1-B](../docs/incrementos/0010/backend/INCREMENTO_0010_P1B.md) y
 [OpenAPI](./openapi.json): nuevo GET `/api/v1/personas/tipos-documento` S/A,
 no-store, sin query. Nuevas altas/cambios del par exigen código habilitado;
 lectura/filtro/par idéntico conservan legado bajo las demás reglas vigentes.
@@ -64,7 +64,7 @@ El responsable informa publicado el Incremento 0009 en `main`, commit
 0010. El manifiesto 0009 se conserva como registro histórico de Bloque 2, sin
 reescribir sus pendientes ni atribuir pruebas posteriores no aportadas.
 
-El [paquete P0 0010](./INCREMENTO_0010_P0.md) agrega exclusivamente
+El [paquete P0 0010](../docs/incrementos/0010/backend/INCREMENTO_0010_P0.md) agrega exclusivamente
 `GET /api/v1/consultas/dashboard`, consultas por puertos públicos y contrato
 [OpenAPI](./openapi.json). No modifica modelos, migraciones, IAM ni la secuencia
 manual. Los agregados S/A provienen de consultas; O conserva la vista reducida
@@ -77,7 +77,7 @@ y de validación MySQL real autorizada; no se declara cerrado 0010.
 La estructura B controlada se implementó localmente en el Bloque 2 autorizado
 el 14/11/2026. Se conservan el monolito modular por capacidades, el Contexto
 Maestro v1.7 OFICIAL y los estados de sus resoluciones. El resultado y las
-verificaciones están en el [manifiesto 0009](./INCREMENTO_0009_ESTRUCTURA_UNIFORME.md).
+verificaciones están en el [manifiesto 0009](../docs/incrementos/0009/backend/INCREMENTO_0009_ESTRUCTURA_UNIFORME.md).
 El Bloque 3 y la revisión independiente están pendientes. Las referencias
 operativas y resultados de otros incrementos que siguen abajo son históricos;
 esta reorganización no certifica el estado actual de una base MySQL.
@@ -543,9 +543,7 @@ sesiones ni auditoría.
 
 La creación permite únicamente ADMINISTRADOR y OPERADOR. Los cambios de rol y
 estado respetan la protección del SUPERADMIN inicial y reutilizan los casos de
-uso que auditan las operaciones. Desactivar una cuenta revoca sus sesiones. El
-cambio de login y el restablecimiento de contraseña no tienen rutas HTTP en
-este incremento. La validación de estas rutas con MySQL real queda pendiente;
+uso que auditan las operaciones. Desactivar una cuenta revoca sus sesiones. El cambio de login se incorpora en Macro D mediante `PATCH /api/v1/iam/usuarios/{usuario_id}/login`, cuerpo exacto `{ "login": "identificador" }`, sesión SUPERADMIN y CSRF. Reutiliza CambiarLoginUsuario, normalización de 3–64 caracteres y auditoría transaccional; protege el SUPERADMIN inicial y conserva rol, estado, contraseña y sesiones. Duplicado: 409; cuerpo inválido: 400. El restablecimiento de contraseña continúa sin ruta HTTP. La validación de estas rutas con MySQL real queda pendiente;
 las pruebas HTTP de este incremento usan SQLite efímero.
 
 ## Procedimiento histórico de solo lectura previo a `0002_identity_iam`
@@ -762,3 +760,5 @@ usan dos conexiones independientes y limpian solo filas ficticias creadas
 por su fixture. No se debe ejecutar ninguno de estos procedimientos antes de
 revisar el código y autorizar la operación correspondiente; primero
 `recon_tests`, después `recon_dev`, sin reintentos ni restauraciones automáticas.
+
+- [Guía docente de dominios y recorridos reales](../docs/arquitectura/GUIA_LECTURA_CODIGO.md).

@@ -1,3 +1,4 @@
+/** Selector asíncrono paginado de Puntos: cancela lecturas obsoletas y no infiere una selección por defecto. */
 import { button, el, loading, message } from './dom.js'
 import { field, setOptions } from './Fields.js'
 

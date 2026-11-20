@@ -1,3 +1,4 @@
+/** Alta/edición de Persona: ocho campos administrativos, catálogos reales y confirmación de valores o cambios antes de enviar. */
 import { PERSON_FIELDS, initialPersonValues, personPayload, changedPersonFields, validatePerson } from '../people/personForm.js'
 import { field, setOptions, showErrors } from '../components/Fields.js'
 import { createWriteFlow } from '../components/writeFlow.js'

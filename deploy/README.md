@@ -1,6 +1,14 @@
 # Docker local — ensayo aislado del Incremento 0010
 
-## Resultado vigente 20/11/2026
+## Resultado vigente Macro E — 20/11/2026
+
+El runtime actualizado post-D/E se construyó y ejecutó en un proyecto/volumen nuevos. Pasaron80 comprobaciones HTTPS/API y26 de Edge real, incluido PATCH/login con MySQL, auditoría/rollback, CSRF y tres roles. Una Persona, un Punto, un Edge administrativo y tres eventos ficticios; reinicio completo conservó datos y login modificado. Servicios propios apagados sin-v, volumen conservado. [Informe E](../docs/pruebas/MACRO_E_DOCKER.md).
+
+Se reutilizaron dependencias instaladas e imágenes locales verificadas, sobrescribiendo todas las fuentes backend actuales y sirviendo artefactos frontend recompilados offline en Nginx limpio. No hubo nuevas instalaciones Windows, pip/npm install ni descargas de capas. Los Dockerfiles canónicos se conservan; reconstrucción fría con instalación no se ejecutó sin permiso de red. Las recetas externas equivalentes y las huellas del runtime se entregan en el ZIP.
+
+[Variante Azure preparada](./azure/README.md), separada e inactiva por defecto, validada solo estáticamente. No está desplegada. No atribuir TLS público, DNS, NSG o permisos Linux al ensayo Windows/Docker. Incremento0010 ABIERTO; no hay commit D/E ni push.
+
+## Corte histórico anterior a Macro D/E — 20/11/2026
 
 Ensayo local completo ejecutado sobre un proyecto y volumen nuevos. HTTPS en
 127.0.0.1:8443, Nginx 1.30.7, Flask/Gunicorn 25.3.0 con Python 3.14.10 y MySQL
@@ -182,3 +190,7 @@ de migración deberá cargar secretos en memoria y verificar la DB nueva mediant
 un procedimiento específico revisado; la factory original no interpreta
 variables `*_FILE` por sí sola. No copiar comandos del host Windows para evitar
 ese paso. Ni `RUTAS_EXTERNAS` ni los cinco archivos privados se crearon aquí.
+
+## Delta F — conservar Bienvenido
+
+El encabezado izquierdo modificado por el responsable se conserva y su build focal pasó. Las imágenes E permanecen como evidencia del runtime post-D/E previo al texto; reconstruir el frontend desde el SHA congelado F antes de desplegar. No se repitió la base nueva, el bootstrap ni las80/26 integradas. El acta externa F acredita si se publicó y el SHA remoto exacto.

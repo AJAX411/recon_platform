@@ -1,3 +1,4 @@
+/** Consulta el detalle de incidencia administrativo y representa campos explícitos, sin exponerlo al OPERADOR. */
 import { INCIDENCE_LABELS, formatBogota } from '../access/format.js'
 import { button, dataGrid, el, link, loading, message, page } from '../components/dom.js'
 

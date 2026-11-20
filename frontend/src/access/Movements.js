@@ -1,3 +1,4 @@
+/** Tabla de movimientos y detalle accesible; selecciona proyección administrativa o reducida sin inventar datos. */
 import { INCIDENCE_LABELS, formatBogota } from './format.js'
 import { approximateTime, checkReduced } from './projections.js'
 import { dataGrid, el, link } from '../components/dom.js'

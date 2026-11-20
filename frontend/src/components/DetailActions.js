@@ -1,3 +1,4 @@
+/** Acciones de ficha y editor administrativo: login, rol y estado son operaciones separadas; SUPERADMIN y eliminación de Persona protegidos. */
 import { administrative } from '../auth/permissions.js'
 import { field, setOptions, showErrors } from './Fields.js'
 import { createWriteFlow } from './writeFlow.js'
@@ -26,14 +27,14 @@ export function mountDetailActions(ctx, data, onSaved) {
   const protectedUser = kind === 'users' && data.rol === 'SUPERADMIN'
   if (kind === 'people' && administrative(user)) {
     actions.append(link('/personas/' + id + '/editar', 'Editar Persona', { className: 'btn btn-primary' }),
-      el('button', { type: 'button', className: 'btn btn-outline-secondary', disabled: true,
+      el('button', { type: 'button', className: 'btn btn-outline-danger', disabled: true,
         'aria-describedby': 'person-erasure-pending' }, 'Eliminar'))
     feedback.append(el('p', { id: 'person-erasure-pending', className: 'muted' },
-      'Eliminar datos no está disponible: requiere una política y un contrato de anonimización aprobados. Desactivar conserva los datos y el historial.'))
+      'La eliminación requiere una política aprobada.'))
   }
   if (protectedUser) feedback.append(message('La cuenta SUPERADMIN inicial está protegida.', 'info'))
-  function add(text, fn) {
-    const control = button(text, () => { if (flow.getPhase() === 'idle' && !fields) fn(control) }, { 'aria-haspopup': 'dialog' })
+  function add(text, fn, className = 'btn btn-outline-secondary') {
+    const control = button(text, () => { if (flow.getPhase() === 'idle' && !fields) fn(control) }, { className, 'aria-haspopup': 'dialog' })
     controls.push(control); actions.append(control)
   }
   if (!protectedUser && (kind !== 'people' || administrative(user))) {
@@ -43,11 +44,12 @@ export function mountDetailActions(ctx, data, onSaved) {
         ? 'El servidor desactivará la cuenta y revocará sus sesiones. Conserva sus datos e historial.'
         : 'Se cambiará el estado administrativo. No se eliminan datos ni historial; no acciona hardware.',
       () => api[{ people: 'personState', users: 'userState', points: 'pointState', devices: 'deviceState' }[kind]](id, value), onSaved, opener)
-    })
+    }, data.estado === 'ACTIVO' ? 'btn btn-outline-warning' : 'btn btn-outline-secondary')
   }
   if ((kind === 'points' || kind === 'devices') && administrative(user)) add('Editar', (opener) => edit('datos', opener))
   if (kind === 'devices') add('Cambiar modo', (opener) => edit('modo', opener))
   if (kind === 'users' && !protectedUser) add('Cambiar rol', (opener) => edit('rol', opener))
+  if (kind === 'users' && user.rol === 'SUPERADMIN' && !protectedUser) add('Editar usuario', (opener) => edit('login', opener), 'btn btn-primary')
   async function cancelEdit(opener) {
     if (flow.getPhase() !== 'idle') return
     if (JSON.stringify(read()) !== baseline) {
@@ -67,6 +69,10 @@ export function mountDetailActions(ctx, data, onSaved) {
     }
     if (type === 'modo') addField('modo_operacion', 'Modo de operación', { options: ['ENTRADA', 'SALIDA', 'AUTOMATICO'].map((value) => ({ value, label: value })) })
     else if (type === 'rol') addField('rol', 'Rol asignable', { options: [] })
+    else if (type === 'login') {
+      addField('login', 'Usuario', { maxLength: 64, required: true, autocomplete: 'off' })
+      fieldset.append(el('p', { className: 'form-help' }, 'De 3 a 64 caracteres: letras sin tildes, números, punto, guion o guion bajo. El rol y el estado se cambian por separado.'))
+    }
     else {
       addField('nombre', 'Nombre', { maxLength: 100, required: true })
       if (kind === 'points') addField('descripcion', 'Descripción', { maxLength: 150 })
@@ -94,16 +100,21 @@ export function mountDetailActions(ctx, data, onSaved) {
       event.preventDefault()
       if (flow.getPhase() !== 'idle') return
       const values = read(), errors = {}
+      if (fields.login && !/^[a-z0-9][a-z0-9._-]{2,63}$/.test(values.login.trim().toLowerCase())) errors.login = 'Usuario no válido: entre 3 y 64 caracteres permitidos.'
       if (fields.nombre && (!values.nombre.trim() || values.nombre.trim().length > 100 || [...values.nombre].some((c) => c.charCodeAt(0) < 32))) errors.nombre = 'Nombre obligatorio, máximo 100 caracteres sin controles.'
       if (fields.descripcion && (values.descripcion.length > 150 || [...values.descripcion].some((c) => c.charCodeAt(0) < 32))) errors.descripcion = 'Descripción no válida.'
       if (fields.rol && !roles.some((r) => r.nombre === values.rol)) errors.rol = 'Selecciona un rol asignable.'
       if (fields.modo_operacion && !['ENTRADA', 'SALIDA', 'AUTOMATICO'].includes(values.modo_operacion)) errors.modo_operacion = 'Selecciona un modo válido.'
       showErrors(fields, errors)
       if (Object.keys(errors).length) return
-      const changes = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value.trim() || null])
+      const changes = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, (key === 'login' ? value.trim().toLowerCase() : value.trim()) || null])
         .filter(([key, value]) => value !== (data[key] || null)))
       if (!Object.keys(changes).length) { feedback.replaceChildren(message('No hay cambios para guardar.', 'info')); return }
       const operation = () => type === 'modo' ? api.deviceMode(id, changes.modo_operacion)
+        : type === 'login' ? api.userLogin(id, changes.login).catch((error) => {
+          if (active && error.status === 409) showErrors(fields, { login: 'Este usuario ya existe. Elige otro identificador.' })
+          throw error
+        })
         : type === 'rol' ? api.userRole(id, changes.rol)
           : kind === 'points' ? api.updatePoint(id, changes) : api.updateDevice(id, changes.nombre)
       void flow.run('Confirmar edición', 'Se guardarán únicamente los datos administrativos modificados; se conserva el historial.', operation, onSaved, save)

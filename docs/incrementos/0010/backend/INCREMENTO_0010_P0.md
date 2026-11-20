@@ -1,6 +1,6 @@
 # Incremento 0010 — P0 controlada
 
-> Continuidad 18/11/2026: [ADR-D0-BE-01](./ADR_D0_BE_01_ORGANIZACION_CAPACIDADES.md)
+> Continuidad 18/11/2026: [ADR-D0-BE-01](../../../../backend/ADR_D0_BE_01_ORGANIZACION_CAPACIDADES.md)
 > refina ubicaciones internas; los enlaces de código apuntan al destino vigente.
 > Los resultados y estados de este incremento conservan su fecha histórica.
 
@@ -12,7 +12,7 @@ Baseline inicial: `main`, HEAD `8166b006d0a44faadcd2901b851be658ba1be0d3`, limpi
 
 ## Fuentes y decisiones aplicadas
 
-[AGENTS](../AGENTS.md), Contexto Maestro v1.7 OFICIAL (25/10/2026), informes
+[AGENTS](../../../../AGENTS.md), Contexto Maestro v1.7 OFICIAL (25/10/2026), informes
 externos de Bloque 1 y encargo expreso P0. Se verificó lectura del Contexto,
 incluida ARQ-BIO-POST16-01, sin modificar su archivo. Documento principal/Anexo 3
 no aportados: no se certifica trazabilidad académica completa.
@@ -34,14 +34,14 @@ no aportados: no se certifica trazabilidad académica completa.
 ## Arquitectura y contrato aditivo
 
 Nuevo `GET /api/v1/consultas/dashboard`, sin parámetros, con guard/transporte
-de sesión humana existentes y `Cache-Control: no-store`. [Controlador](./src/recon_platform/consultas/controlador.py)
-→ [servicio](./src/recon_platform/consultas/servicio.py) → puertos
-públicos [Accesos](./src/recon_platform/accesos/contratos_consultas.py) y
-[Personas](./src/recon_platform/personas/contratos_consultas.py). Composición
+de sesión humana existentes y `Cache-Control: no-store`. [Controlador](../../../../backend/src/recon_platform/consultas/controlador.py)
+→ [servicio](../../../../backend/src/recon_platform/consultas/servicio.py) → puertos
+públicos [Accesos](../../../../backend/src/recon_platform/accesos/contratos_consultas.py) y
+[Personas](../../../../backend/src/recon_platform/personas/contratos_consultas.py). Composición
 construye adaptadores de cada capacidad con la misma sesión. Reporting no
 importa repositorios privados de otras capacidades. No tablas/modelos nuevos.
 
-[Unidad de lectura](./src/recon_platform/consultas/unidad_lectura.py)
+[Unidad de lectura](../../../../backend/src/recon_platform/consultas/unidad_lectura.py)
 descarta la lectura implícita del guard, solicita REPEATABLE READ para MySQL y
 finaliza con rollback. SQLite usa SERIALIZABLE para pruebas en memoria. La
 consistencia real MySQL y su rendimiento se mantienen pendientes de autorización.
@@ -72,8 +72,8 @@ de cobertura detectada devuelve ocupación no disponible. No se corrige historia
 
 ## Perfiles, errores y privacidad
 
-[DTO](./src/recon_platform/consultas/dto.py) por allowlist, documentado
-en [OpenAPI](./openapi.json). S/A reciben métricas, calidad, incidencias y filas
+[DTO](../../../../backend/src/recon_platform/consultas/dto.py) por allowlist, documentado
+en [OpenAPI](../../../../backend/openapi.json). S/A reciben métricas, calidad, incidencias y filas
 administrativas mínimas del dashboard. O **no ejecuta** las consultas de ocupación
 ni total Personas; recibe solo incidencias de hoy y tres campos de movimiento
 reducido. Su `generado_en` también se redondea a la hora para no exponer instantes
@@ -85,7 +85,7 @@ JWT, registro público, cambios IAM, operaciones Edge ni persistencia biométric
 
 ## Verificación y límites
 
-[Pruebas nuevas](./tests/unit/test_dashboard_0010.py): fórmulas/cortes/empates,
+[Pruebas nuevas](../../../../backend/tests/unit/test_dashboard_0010.py): fórmulas/cortes/empates,
 incidencias, rechazos, nocturno, múltiples Puntos, inactivos, sin historia,
 base vacía, replay, máximo diez, perfil O/DTO/HTTP, fallos y compilación MySQL
 sin conexión. La prueba histórica de estructura 0009 conserva su hash de rutas

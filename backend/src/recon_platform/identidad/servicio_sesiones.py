@@ -1,4 +1,6 @@
-"""Servicios y casos de uso existentes."""
+"""Casos de uso de sesión humana: vigencia, CSRF, rotación y cierre.
+Usa tokens aleatorios, digests y HMAC; consulta cuenta/rol actuales por puertos.
+Los identificadores y credenciales no se registran en logs ni auditoría."""
 
 import hashlib
 import hmac
@@ -31,6 +33,7 @@ def token_csrf(token_sesion: str, clave: str) -> str:
 
 
 class GestionSesiones:
+    """Coordina tokens opacos y cuenta vigente mediante puertos, sin Flask."""
     def __init__(
         self,
         sesiones: RepositorioSesiones,
@@ -78,6 +81,7 @@ class GestionSesiones:
     def iniciar_autenticada(
         self, token_anterior: str, login: str, contrasena: str, ahora: datetime
     ) -> tuple[str, IdentidadAutenticada] | None:
+        """Verifica credenciales y rota la sesión anterior solo tras autenticación válida."""
         anterior = self.obtener(token_anterior, ahora)
         if anterior is None:
             return None
@@ -96,6 +100,7 @@ class GestionSesiones:
             raise
 
     def identidad_actual(self, token: object, ahora: datetime) -> IdentidadAutenticada | None:
+        """Relee estado/rol de la cuenta y renueva actividad de una sesión vigente."""
         sesion = self.obtener(token, ahora)
         if sesion is None or sesion.id_usuario is None:
             return None

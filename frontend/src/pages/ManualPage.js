@@ -1,3 +1,4 @@
+/** Formulario de declaración manual: consume selectores y store idempotente; no equivale a reconocimiento facial ni apertura física. */
 import { administrative } from '../auth/permissions.js'
 import { INCIDENCE_LABELS, formatBogota } from '../access/format.js'
 import { field } from '../components/Fields.js'

@@ -1,3 +1,4 @@
+/** Adaptador de endpoints /api/v1: valida IDs y confirmación de escrituras; no decide permisos del servidor. */
 import { ApiError, createHttp } from './http.js'
 import { pagePath } from './pagination.js'
 import { adminFiltersToApi } from '../access/format.js'
@@ -60,6 +61,7 @@ export function createApi(fetcher) {
     updatePerson: (id, body) => write(idPath('/personas', id), 'PATCH', body, 'id_persona', id),
     personState: (id, estado) => write(idPath('/personas', id, '/estado'), 'PATCH', { estado }, 'id_persona', id),
     createUser: (body) => write('/iam/usuarios', 'POST', body, 'id_usuario'),
+    userLogin: (id, login) => write(idPath('/iam/usuarios', id, '/login'), 'PATCH', { login }, 'id_usuario', id),
     userRole: (id, rol) => write(idPath('/iam/usuarios', id, '/rol'), 'PATCH', { rol }, 'id_usuario', id),
     userState: (id, estado) => write(idPath('/iam/usuarios', id, '/estado'), 'PATCH', { estado }, 'id_usuario', id),
     createPoint: (body) => write('/puntos-acceso', 'POST', body, 'id_punto_acceso'),

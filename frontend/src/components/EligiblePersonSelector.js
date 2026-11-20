@@ -1,3 +1,4 @@
+/** Busca Personas elegibles por el endpoint acotado de Accesos; no concede permisos al catálogo administrativo. */
 import { button, el, loading, message } from './dom.js'
 import { field, setOptions } from './Fields.js'
 

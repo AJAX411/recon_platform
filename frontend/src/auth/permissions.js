@@ -1,3 +1,4 @@
+/** Permisos de navegación por rol para experiencia de usuario; la autorización efectiva permanece en Flask. */
 export const ROLES = ['SUPERADMIN', 'ADMINISTRADOR', 'OPERADOR']
 export const administrative = (user) => ['SUPERADMIN', 'ADMINISTRADOR'].includes(user?.rol)
 export const superadmin = (user) => user?.rol === 'SUPERADMIN'

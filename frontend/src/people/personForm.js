@@ -1,3 +1,4 @@
+/** Reglas de los ocho campos administrativos y payload parcial; no incorpora cuentas, fotos ni enrolamiento. */
 // Solo los ocho campos administrativos del contrato vigente P0.
 export const PERSON_FIELDS = {
   primer_nombre: { label: 'Primer nombre', max: 100, required: true },

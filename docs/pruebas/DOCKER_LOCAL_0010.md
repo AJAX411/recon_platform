@@ -1,5 +1,7 @@
 # Validación Docker local — Incremento 0010
 
+> Corte histórico anterior a Macro D/E. La verificación actualizada se documenta en [Macro E](./MACRO_E_DOCKER.md); los resultados siguientes conservan su fecha y alcance originales.
+
 20/11/2026. **LISTO PARA REVISIÓN DE ESTABILIDAD LOCAL**, con reservas. No cierra
 Incremento0010 ni G6 Windows. [Compose](../../compose.yaml),
 [guía Docker](../../deploy/README.md) y

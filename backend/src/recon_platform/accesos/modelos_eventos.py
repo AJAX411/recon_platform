@@ -1,4 +1,5 @@
-"""Modelos ORM canónicos."""
+"""Mapeo ORM de EventoAcceso, sus referencias e idempotencia.
+Describe restricciones persistidas; las reglas de secuencia viven en dominio."""
 
 from datetime import datetime
 from typing import TYPE_CHECKING

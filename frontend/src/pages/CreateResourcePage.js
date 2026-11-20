@@ -1,3 +1,4 @@
+/** Altas administrativas de cuentas, Puntos y Edge: catálogo real, validación, confirmación y limpieza de contraseña. */
 import { field, setOptions, showErrors } from '../components/Fields.js'
 import { createWriteFlow } from '../components/writeFlow.js'
 import { mountPointSelector } from '../components/PointSelector.js'

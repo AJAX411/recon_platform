@@ -160,19 +160,27 @@ legend { float: none; width: auto; font-size: 1rem; font-weight: 680; color: var
 .metric-card small { display: block; color: var(--ink-soft); font-size: .75rem; }
 .coverage-note { margin: .85rem 0 1rem; padding: .25rem 0 .25rem .8rem; color: var(--ink-soft); border-left: 2px solid var(--control-line); font-size: .875rem; }
 .dashboard .results-panel { margin-top: 1.25rem; }
-.login-page { min-height: 100vh; display: grid; grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr); background: var(--canvas); }
-.login-aside { background: var(--navy); color: white; display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: clamp(2rem,5vw,5rem); }
+.login-host.centered-state { max-width: none; margin: 0; padding: 0; }
+.login-page { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(0,.46fr) minmax(0,.54fr); background: #f8faf9; }
+.login-aside { position: relative; overflow: hidden; isolation: isolate; background: var(--navy); color: white; display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: clamp(2rem,5vw,5rem); }
 .login-aside h1 { color: white; max-width: 25rem; font-size: clamp(2rem,3.4vw,3.25rem); line-height: 1.12; }
-.login-aside p:last-child { color: #c4d7df; max-width: 28rem; margin: 2rem 0 0; border-top: 1px solid #5f879b; padding-top: 1rem; font-size: .875rem; }
+.login-introduction { position: relative; z-index: 1; }
 .login-panel { display: grid; place-items: center; padding: clamp(1.5rem,5vw,4rem); min-width: 0; }
-.login-card { width: min(100%,29rem); padding: clamp(1.5rem,3vw,2.5rem); background: var(--surface); border: 1px solid var(--line); border-radius: .875rem; box-shadow: var(--shadow); }
+.login-card { width: min(100%,29rem); padding: clamp(1.5rem,3vw,2.5rem); background: var(--surface); border: 1px solid var(--line); border-radius: .875rem; box-shadow: 0 12px 40px rgb(18 50 72 / .07); }
 .login-card h2 { font-size: clamp(1.75rem,2.5vw,2.25rem); margin-bottom: .75rem; }
 .login-card .muted { margin-bottom: 1.5rem; }
 .login-aside .login-description { color: #c4d7df; max-width: 30rem; margin-top: 1.5rem; }
 .password-field { position: relative; }
-.password-field input { padding-right: 3.5rem; }
-.password-toggle { position: absolute; right: .4rem; top: 1.8rem; min-width: 2.75rem; min-height: 2.75rem; display: grid; place-items: center; border: 0; background: transparent; color: var(--brand-hover); border-radius: 50%; }
+.password-field input { padding-right: 3.5rem; min-height: 3rem; }
+.password-toggle { position: absolute; right: .125rem; top: 50%; transform: translateY(-50%); width: 2.75rem; height: 2.75rem; display: grid; place-items: center; border: 0; background: transparent; color: var(--brand-hover); border-radius: .375rem; padding: 0; }
 .password-toggle:hover { background: var(--brand-pale); }
+.password-toggle:disabled { opacity: .55; cursor: not-allowed; }
+.login-card .password-toggle { margin: 0; }
+.login-card .login-submit { width: 100%; margin: 1.5rem 0 0; }
+.login-geometry { position: absolute; z-index: -1; width: 32rem; height: 32rem; bottom: -20rem; right: -12rem; border: 1px solid #37657a; border-radius: 50%; }
+.login-geometry i { position: absolute; inset: -3rem; border: 1px solid #37657a; border-radius: 50%; }
+.login-geometry i:nth-child(2) { inset: -6rem; }
+.login-geometry i:nth-child(3) { inset: -9rem; }
 /* V2: patrones compartidos de lectura, formularios y composición. */
 .session-exit { flex-shrink: 0; }
 .access-stack > * { min-width: 0; }
@@ -235,6 +243,12 @@ legend { float: none; width: auto; font-size: 1rem; font-weight: 680; color: var
 @media (max-width: 1150px) { .access-stack { grid-template-columns: 1fr; } }
 @media (max-width: 900px) {
   .workspace { grid-template-columns: 1fr; }
+  .login-page { grid-template-columns: 1fr; }
+  .login-aside { padding: 1.75rem 1.5rem; }
+  .login-wordmark { margin-bottom: 1rem; }
+  .login-aside h1 { font-size: 1.8rem; max-width: none; }
+  .login-aside .login-description { margin-top: .75rem; }
+  .login-panel { padding: 1.5rem; }
   .side-nav { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .25rem; padding: .75rem; margin: .75rem .75rem 0; border: 0; }
   .nav-caption { display: none; }
   .side-link { font-size: .8125rem; padding: .6rem; }
@@ -287,3 +301,9 @@ legend { float: none; width: auto; font-size: 1rem; font-weight: 680; color: var
 .manual-form { display:flex; flex-direction:column; gap:1.25rem; max-width:72rem; }
 .manual-form > fieldset { margin:0; }
 .point-selector .form-actions { margin-block:1rem; }
+
+/* Macro D: acciones administrativas con semántica y contraste comunes. */
+.btn-outline-danger { --bs-btn-color: var(--danger); --bs-btn-border-color: var(--danger); --bs-btn-hover-bg: var(--danger); --bs-btn-hover-color: #fff; --bs-btn-hover-border-color: var(--danger); --bs-btn-disabled-color: #8a3341; --bs-btn-disabled-bg: #faedf0; --bs-btn-disabled-border-color: #c58c97; --bs-btn-disabled-opacity: 1; }
+.btn-outline-warning { --bs-btn-color: #704400; --bs-btn-border-color: #94621a; --bs-btn-bg: #fff8eb; --bs-btn-hover-color: #fff; --bs-btn-hover-bg: #704400; --bs-btn-hover-border-color: #704400; --bs-btn-disabled-color: #705e40; --bs-btn-disabled-border-color: var(--line); --bs-btn-disabled-opacity: 1; }
+.page-head > .form-actions { justify-content: flex-end; }
+@media (max-width: 650px) { .page-head > .form-actions { justify-content: flex-start; } }

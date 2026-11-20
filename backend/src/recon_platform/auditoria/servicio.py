@@ -1,4 +1,5 @@
-"""Servicios y casos de uso existentes."""
+"""Caso de uso de consulta de auditoría general.
+Exige permisos administrativos y paginación; no implementa limpieza de historial."""
 
 from datetime import datetime
 

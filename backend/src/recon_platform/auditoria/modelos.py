@@ -1,4 +1,5 @@
-"""Modelos ORM canónicos."""
+"""Mapeo ORM de EventoAuditoria general, distinto de las auditorías IAM y Personas.
+No incorpora credenciales ni material biométrico."""
 
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING

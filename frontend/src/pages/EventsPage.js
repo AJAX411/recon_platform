@@ -1,3 +1,4 @@
+/** Historial e incidencias por rol; limita filtros de OPERADOR y conserva la selección administrativa en la URL. */
 import { administrative } from '../auth/permissions.js'
 import { ADMIN_FILTERS, INCIDENCE_LABELS, validateAdminFilters } from '../access/format.js'
 import { movements } from '../access/Movements.js'

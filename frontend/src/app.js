@@ -1,3 +1,4 @@
+/** Compone sesión, shell, páginas y stores; reemplaza y desmonta vistas cuando cambia identidad, rol o ruta. */
 import { createApi } from './api/index.js'
 import { createSessionStore } from './auth/sessionStore.js'
 import { allows } from './auth/permissions.js'

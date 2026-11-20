@@ -1,3 +1,4 @@
+/** Registro de funciones de montaje por tipo de página; cada una devuelve su limpieza de eventos/lecturas. */
 import { mountDashboard } from './DashboardPage.js'
 import { mountList } from './ListPage.js'
 import { mountDetail } from './DetailPage.js'

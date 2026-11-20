@@ -29,9 +29,10 @@ interfaces de semántica distinta. Accesos contiene dos subcapacidades reales
 fusionarlos en un controlador gigante. Consultas no necesita un `modelos.py`
 vacío para cumplir una plantilla.
 
-Se inventariaron 81 módulos Python y 37 subdirectorios antiguos que solo conservan
-caché o están vacíos. No contienen `.py` ni wrappers activos. **CANDIDATOS A RETIRO
-CONTROLADO**, no eliminados ni movidos en A. Los .pyc ignorados no son fuentes
+En el corte A/D se inventariaron81 módulos y37 subdirectorios antiguos vacíos
+o con caché, sin fuentes/wrappers activos. Entonces eran candidatos a retiro,
+no se eliminaron en A/D. Macro E retiró únicamente esas rutas verificadas, con
+copia externa de cachés y sin borrar módulos; las capas lógicas se conservan. Los .pyc ignorados no son fuentes
 canónicas y no deben usarse como entrada de empaquetado. Las exclusiones de
 [.dockerignore](../../.dockerignore) los dejan fuera del contexto futuro.
 
@@ -74,3 +75,24 @@ ni descargas de activos en runtime. No se incorporan capturas del profesor como
 activos de la aplicación. Su ejemplo orienta aspectos técnicos/visuales, sin
 copiar dominio, roles ni mecanismos de seguridad. No se deduce de ello una licencia
 global nueva del proyecto ni se redistribuyen materiales privados académicos.
+
+## Evaluación Macro D — organización conservada
+
+La inspección de los 81 módulos y sus imports estáticos no detectó ciclos.
+En el corte D, las37 carpetas antiguas conservaban únicamente caché o estaban vacías;
+no eran una segunda implementación. EnD no se trasladaron ni eliminaron para simular
+una nueva arquitectura. La matriz externa documenta por módulo responsabilidad,
+capa lógica, dependencias entrantes/salientes y referencias de pruebas; ese
+análisis estático no equivale a cobertura dinámica ni demuestra desacoplamiento
+absoluto de los adaptadores ORM con joins cruzados preexistentes.
+
+Macro D expone el caso de uso existente CambiarLoginUsuario mediante un PATCH
+mínimo en el controlador IAM. No mueve dominio, ORM, repositorios, composición
+ni migraciones. El guard SUPERADMIN/CSRF, los contratos de cuentas, la unidad de
+trabajo y la auditoría conservan sus responsabilidades. El frontend separa la
+edición de login de los cambios de rol y estado; no añade nombres o FK Persona.
+La integración MySQL real del PATCH queda pendiente de autorización y prueba.
+
+## Macro E — higiene y explicación
+
+Las37 carpetas antiguas se retiraron tras comprobar vacío o caché ignorada, con copia externa de la caché y sin borrar fuentes. Los81 módulos mantienen sus rutas. [Guía de lectura](./GUIA_LECTURA_CODIGO.md) y [guion de sustentación](./GUIA_SUSTENTACION_CODIGO.md) explican las capas lógicas existentes. No se hizo reorganización de módulos.

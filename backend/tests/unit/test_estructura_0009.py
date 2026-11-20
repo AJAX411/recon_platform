@@ -49,7 +49,8 @@ def test_primer_registro_aislado_conserva_modelos_metadata_y_mapa_http():
             "subdomain": r.subdomain, "redirect_to": r.redirect_to,
             "automatic_options": r.provide_automatic_options,
         } for r in app.url_map.iter_rules() if not r.endpoint.startswith("consultas.")
-            and r.endpoint != "administracion_personas.listar_tipos_documento"], key=lambda r: (r["rule"], r["endpoint"])),
+            and r.endpoint not in {"administracion_personas.listar_tipos_documento",
+                                   "administracion_iam.cambiar_login"}], key=lambda r: (r["rule"], r["endpoint"])),
             "blueprints": [k for k in app.blueprints if k != "consultas"],
             "before": {str(k): [f.__name__ for f in fs] for k,fs in app.before_request_funcs.items() if k != "consultas"},
             "after": {str(k): [f.__name__ for f in fs] for k,fs in app.after_request_funcs.items() if k != "consultas"},
@@ -64,6 +65,9 @@ def test_primer_registro_aislado_conserva_modelos_metadata_y_mapa_http():
                     if r.endpoint == "administracion_personas.listar_tipos_documento"]
         assert len(catalogo) == 1 and catalogo[0].rule == "/api/v1/personas/tipos-documento"
         assert catalogo[0].methods == {"GET", "HEAD", "OPTIONS"}
+        login = [r for r in app.url_map.iter_rules() if r.endpoint == "administracion_iam.cambiar_login"]
+        assert len(login) == 1 and login[0].rule == "/api/v1/iam/usuarios/<int:usuario_id>/login"
+        assert login[0].methods == {"PATCH", "OPTIONS"}
         mappers = list(db.Model.registry.mappers)
         assert len(mappers) == 11 and len(db.metadata.tables) == 11
         assert "alembic_version" not in db.metadata.tables

@@ -1,6 +1,6 @@
 # Incremento 0009 — Estructura uniforme B controlada
 
-> Continuidad 18/11/2026: [ADR-D0-BE-01](./ADR_D0_BE_01_ORGANIZACION_CAPACIDADES.md)
+> Continuidad 18/11/2026: [ADR-D0-BE-01](../../../../backend/ADR_D0_BE_01_ORGANIZACION_CAPACIDADES.md)
 > refina ubicaciones internas; los enlaces de código apuntan al destino vigente.
 > Los resultados y estados de este incremento conservan su fecha histórica.
 
@@ -38,7 +38,7 @@ Se implementó el árbol aprobado: 100 archivos Python de aplicación, de los
 cuales 64 contienen funcionalidad y 36 son inicializadores técnicos sin lógica.
 Se retiraron los 28 orígenes funcionales y dos inicializadores de aplicación
 obsoletos, sin fachadas ni clases duplicadas. El
-[README backend](./README.md#rutas-históricas-del-corte-2180476) contiene el cruce
+[README backend](../../../../backend/README.md#rutas-históricas-del-corte-2180476) contiene el cruce
 completo de rutas históricas.
 
 - U1: dominio, puertos y servicios conservan los casos de uso y sus cuerpos.
@@ -78,10 +78,10 @@ a persistencia, sin bootstrap operativo. Ninguna función Alembic upgrade o
 downgrade se ejecutó. SQLite no demuestra locks, concurrencia o integridad
 de una base MySQL real.
 
-Las nuevas [pruebas de estructura](./tests/unit/test_estructura_0009.py)
+Las nuevas [pruebas de estructura](../../../../backend/tests/unit/test_estructura_0009.py)
 congelan las firmas de U0 para DDL/índices MySQL compilados y mapa HTTP completo,
 verifican primer registro en un proceso limpio, identidad de clases, sesión
-compartida y reloj canónico. Las [pruebas DTO](./tests/unit/test_dto_0009.py)
+compartida y reloj canónico. Las [pruebas DTO](../../../../backend/tests/unit/test_dto_0009.py)
 verifican forma, null, fechas, etapas y selección explícita de campos.
 
 | Firma SHA-256 de referencia | Valor conservado |
@@ -115,7 +115,7 @@ Se conservan los acoplamientos de consultas entre capacidades y proyecciones
 en infraestructura, y el acceso interno para el contexto de fallo de modo.
 No se modificó la política de retención ni se repararon literalmente enlaces
 históricos del frontend: se documentó su correspondencia. El docstring histórico
-de [env Alembic](./migrations/env.py) no hace seguro importarlo: su cuerpo ejecuta
+de [env Alembic](../../../../backend/migrations/env.py) no hace seguro importarlo: su cuerpo ejecuta
 la selección de migración; se revisó por AST y solo se cambiaron imports.
 
 No hubo lectura o escritura operativa de bases, migraciones, procedimientos

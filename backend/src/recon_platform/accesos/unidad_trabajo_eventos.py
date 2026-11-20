@@ -1,4 +1,5 @@
-"""Unidad de trabajo existente."""
+"""Adaptador del límite transaccional del registro manual.
+Descarta la lectura previa del guard antes del bloqueo y expone commit/rollback."""
 
 from flask_sqlalchemy.session import Session as SesionFlask
 from sqlalchemy.orm import Session, scoped_session

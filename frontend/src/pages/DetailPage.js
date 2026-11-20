@@ -1,3 +1,4 @@
+/** Ficha consultada por ID: descarta respuestas obsoletas, monta acciones autorizadas y relee tras guardar. */
 import { button, dataGrid, el, link, loading, message, page } from '../components/dom.js'
 import { resources, personName } from './resources.js'
 import { mountDetailActions } from '../components/DetailActions.js'

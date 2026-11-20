@@ -1,4 +1,6 @@
-"""Servicios y casos de uso existentes."""
+"""Casos de uso del registro MANUAL y consultas de Accesos.
+Coordina actor vigente, bloqueo de Persona/Punto, clave idempotente, secuencia
+de jornada Bogotá y auditoría en una única transacción; no acciona puertas."""
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -61,6 +63,7 @@ def clave_valida(valor: object) -> str:
 
 
 class RegistrarEventoManual:
+    """Registra una declaración humana idempotente con auditoría atómica."""
     def __init__(self, eventos: RepositorioEventos, auditoria: Auditoria,
                  unidad: UnidadTrabajo, reloj: Callable[[], datetime] | None = None) -> None:
         self.eventos, self.auditoria, self.unidad = eventos, auditoria, unidad
@@ -76,6 +79,7 @@ class RegistrarEventoManual:
 
     def ejecutar(self, *, actor: ActorAcceso, id_persona: int, id_punto_acceso: int,
                 tipo_movimiento: str, clave: str | None) -> ResultadoRegistro:
+        """Bloquea referencias antes de leer secuencia; revierte todo ante error."""
         autorizar(actor)
         if (type(id_persona) is not int or id_persona <= 0
             or type(id_punto_acceso) is not int or id_punto_acceso <= 0
@@ -139,6 +143,7 @@ class RegistrarEventoManual:
 
 
 class ConsultarEventosAcceso:
+    """Separa historial administrativo de proyección reducida de OPERADOR."""
     def __init__(self, eventos: RepositorioEventos, reloj: Callable[[], datetime] | None = None) -> None:
         self.eventos = eventos
         self.reloj = reloj or (lambda: datetime.now(UTC))

@@ -1,3 +1,4 @@
+/** Listados por recurso: filtros, paginación y columnas definidas; una consulta pendiente se cancela al desmontar. */
 import { administrative } from '../auth/permissions.js'
 import { button, el, link, loading, message, page } from '../components/dom.js'
 import { filters as createFilters, pagination } from '../components/Filters.js'

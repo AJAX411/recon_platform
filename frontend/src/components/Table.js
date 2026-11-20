@@ -1,3 +1,4 @@
+/** Tabla semántica y enlaces de detalle accesibles; cada celda corresponde a un campo definido por la vista. */
 import { button, el, link } from './dom.js'
 import { icon } from './Icons.js'
 

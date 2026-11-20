@@ -52,6 +52,7 @@ def establecer_cookie(respuesta: Response, token: str) -> None:
 
 
 def comprobar_transporte_web() -> tuple[Response, int] | None:
+    """Rechaza transporte inseguro; la excepción HTTP exige host y peer loopback."""
     request.max_content_length = 16 * 1024
     if current_app.config["RECON_COOKIE_SECURE"] and not request.is_secure:
         return respuesta_error(403, "La autenticación HTTP requiere HTTPS.")
@@ -67,6 +68,7 @@ def comprobar_transporte_web() -> tuple[Response, int] | None:
 
 
 def csrf_requerido(gestor: GestionSesiones, ahora: datetime) -> bool:
+    """Valida token ligado a sesión antes de escrituras; falla cerrado ante persistencia."""
     try:
         return gestor.csrf_valido(
             request.cookies.get(NOMBRE_COOKIE), request.headers.get("X-CSRF-Token"), ahora

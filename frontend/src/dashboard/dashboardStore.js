@@ -1,3 +1,4 @@
+/** Resumen por identidad: valida la proyección de rol, invalida tras mutaciones y revalida por actividad sin polling. */
 export function createDashboardStore(api, session) {
   let state = { data: null, status: 'loading', error: '' }
   let identity = ''

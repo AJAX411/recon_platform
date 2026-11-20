@@ -23,6 +23,7 @@ class Dashboard:
 
 
 class ConsultarDashboard:
+    """Construye resumen por rol usando puertos de lectura y un corte temporal único."""
     def __init__(self, accesos: LecturaAccesos, personas: LecturaPersonas,
                  unidad: UnidadLectura, reloj: Callable[[], datetime]) -> None:
         self.accesos, self.personas, self.unidad, self.reloj = accesos, personas, unidad, reloj

@@ -7,7 +7,8 @@ from flask import Blueprint, Response, g, jsonify, request
 
 from recon_platform.extensions import db
 from recon_platform.identidad.seguridad_http import comprobar_transporte_web, requerir_roles
-from recon_platform.identidad.servicio_cuentas import CambiarEstadoUsuario, CambiarRolUsuario, ConflictoIntegridadIAM, ConsultarUsuarioPlataforma, CrearUsuarioPlataforma, DatosInvalidosIAM, ListarRoles, ListarUsuariosPlataforma, PermisoDenegado, RolNoExiste, UsuarioDuplicado, UsuarioNoExiste
+from recon_platform.identidad.servicio_cuentas import CambiarEstadoUsuario, CambiarLoginUsuario, CambiarRolUsuario, ConflictoIntegridadIAM, ConsultarUsuarioPlataforma, CrearUsuarioPlataforma, DatosInvalidosIAM, ListarRoles, ListarUsuariosPlataforma, PermisoDenegado, RolNoExiste, UsuarioDuplicado, UsuarioNoExiste
+from recon_platform.identidad.usuario_plataforma import normalizar_login
 from recon_platform.identidad.dto_usuarios import representar_usuario, validar_cuerpo_exacto
 from recon_platform.composicion import crear_dependencias_iam
 
@@ -140,6 +141,27 @@ def crear_usuario() -> Response | tuple[Response, int]:
         respuesta = jsonify(representar_usuario(usuario))
         respuesta.headers["Location"] = f"/api/v1/iam/usuarios/{usuario.id_usuario}"
         return respuesta, 201
+
+    return _ejecutar(operacion)
+
+
+@bp.patch("/usuarios/<int:usuario_id>/login")
+@requerir_roles("SUPERADMIN")
+def cambiar_login(usuario_id: int) -> Response | tuple[Response, int]:
+    cuerpo = _cuerpo_exacto("login")
+    if cuerpo is None:
+        return _error(400, "El identificador de login no es válido.")
+    try:
+        login = normalizar_login(cuerpo["login"])
+    except ValueError:
+        return _error(400, "El identificador de login no es válido.")
+
+    def operacion() -> Response:
+        repositorio, unidad = crear_dependencias_iam()
+        usuario = CambiarLoginUsuario(repositorio, unidad).ejecutar(
+            actor_id=g.identidad_iam.id_usuario, usuario_id=usuario_id, login=login,
+        )
+        return jsonify(representar_usuario(usuario))
 
     return _ejecutar(operacion)
 

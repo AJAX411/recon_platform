@@ -1,3 +1,4 @@
+/** Metadatos de listados y fichas: rutas, IDs, columnas y representación de nombres; no define entidades nuevas. */
 export const personName = (person) => [person.primer_nombre, person.segundo_nombre,
   person.primer_apellido, person.segundo_apellido].filter(Boolean).join(' ')
 const state = { key: 'estado', label: 'Estado', options: ['ACTIVO', 'INACTIVO'] }

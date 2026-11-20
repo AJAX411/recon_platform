@@ -1,4 +1,5 @@
-"""Puertos de aplicación existentes."""
+"""Puertos para persistir/consultar auditoría general y delimitar su transacción.
+No exponen sesiones ORM a los casos de uso."""
 
 from typing import Protocol
 

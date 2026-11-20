@@ -1,3 +1,4 @@
+/** Construye etiqueta/control/error asociados y aplica validación accesible; las reglas del negocio se verifican también en backend. */
 import { el } from './dom.js'
 
 export function field(id, label, { value = '', options, ...attrs } = {}) {

@@ -1,12 +1,13 @@
 # VIGENTE — Contrato para transferir Recon Facial a Azure
 
-Macroencargo C, 20/11/2026. **Candidata estable local con salvedades; Incremento
-0010 ABIERTO. Azure NO desplegado ni validado por esta sesión.** La versión es
-el commit que contiene este documento: obtenerlo con `git rev-parse HEAD` y
-contrastar con `git ls-remote origin refs/heads/main`. El acta externa
-`TRASPASO_AZURE_DESDE_COMMIT_ESTABLE.md` incorpora el SHA publicado real y su
-comprobación remota después de C4. No se inserta un SHA supuesto ni se intenta
-incluir en un commit su propia huella autorreferente.
+Macroencargo F, 20/11/2026. **Candidata D/E/F con reservas; Incremento0010
+ABIERTO. Azure NO desplegado ni validado por esta sesión.** La versión de código
+es el commit que contiene este estado; contrastar `git rev-parse HEAD` con el SHA
+remoto de main y con `TRASPASO_AZURE_POST_GIT.md`, generado externamente después
+del push verificado. No insertar una huella autorreferente en el propio commit.
+El SHA `affa5e5064e8eeb014840af962bf3e88e21c5202` queda como corte histórico
+Macro C, anterior a D/E/F. El acta externa indicará PUBLICADO o NO PUBLICADO;
+este contrato no sustituye esa comprobación.
 
 ## Código y artefactos canónicos
 
@@ -55,7 +56,7 @@ forwarded-allow-ips vacío: el [adaptador](../../backend/deploy/app_wsgi.py) val
 el peer frontend y X-Forwarded-Proto=https. No confía en headers reenviados del
 cliente. Flask DEBUG=False. No ejecutar flask run público ni RECON_LOCAL_HTTP.
 
-[OpenAPI](../../backend/openapi.json): base `/api/v1`,35 operaciones. Sesiones
+[OpenAPI](../../backend/openapi.json): base `/api/v1`,36 operaciones, incluido PATCH IAM/login. Sesiones
 humanas stateful con cookie opaca `recon_session`, Path=/api/v1, HttpOnly,
 Secure, SameSite=Lax; CSRF en escrituras. GET /api/v1/auth/csrf prepara sesión;
 POST login devuelve el token CSRF renovado en X-CSRF-Token; no guardarlo en logs.
@@ -109,7 +110,13 @@ entrada443 hacia8443 o terminación TLS/proxy acotado compatible con cookies.
 No basta abrir NSG o mapear otro puerto; no bajar Secure ni aceptar cualquier
 X-Forwarded-Proto. Puerto80 solo si se implementa/autorizan ACME o redirect;
 **no publicar8080 de liveness como HTTP del sitio**. DB/API/socket Docker nunca
-públicos. Este contrato delimita la adaptación; no la presenta implementada.
+públicos. La variante separada [deploy/azure](../../deploy/azure/README.md) está
+PREPARADA / NO DESPLEGADA: FQDN exacto validado, TLS externo, perfil exclusivo,
+bind loopback por defecto y límites iniciales de recursos. Compose config y
+nginx-t con fixtures sintéticos aprobaron; no se verificaron DNS/NSG/TLS público,
+permisos POSIX de secretos o rendimiento en la VM. Docker local probado NO equivale
+a Docker público listo en Azure. Para publicar443 se requiere permiso cloud y
+verificación de bind/NSG/firewall, sin exponer API/DB.
 
 ## Esquema, CLI y datos ficticios: puerta independiente
 
@@ -127,25 +134,45 @@ flask --app app_wsgi:create_cli_app db upgrade --directory /opt/recon/migrations
 flask --app app_wsgi:create_cli_app bootstrap-superadmin
 ```
 
-Son equivalencias CLI propuestas para la coordinación; el ensayo previo ejecutó
-flask_migrate.upgrade programático y la CLI oficial de bootstrap. No se repitieron
-en Macro C. Bootstrap pide datos ocultos, protege la SUPERADMIN única e idempotente;
+Son operaciones sujetas a permiso para CADA destino. El ensayo E ejecutó las
+seis revisiones y bootstrap mediante CLI oficial (test_cli_runner dentro del
+contenedor propio), solo después de comprobar identidad/usuario/volumen nuevos y
+esquema vacío. No repetir en un volumen con datos; Azure necesita su propia puerta. Bootstrap pide datos ocultos, protege la SUPERADMIN única e idempotente;
 no pasar contraseñas en args ni crear cuentas por SQL manual. ADMINISTRADOR y
 OPERADOR se crean por la administración oficial con auditoría. Usar solo fixtures
 ficticios; no declarar biometría, apertura física ni supresión Persona implementada.
 
 ## Evidencia, reservas y recuperación
 
-Ensayo Docker anterior aprobado:190/190 frontend,20/20 adaptador,87 HTTPS/API,
-37 Edge y persistencia tras parada/reinicio. Cinco Personas, dos Puntos, un Edge
-administrativo inactivo/sin comunicación, cinco eventos manuales y dos incidencias.
-Macro C reutiliza por hashes sin repetir ensayos si solo cambia documentación.
+Ensayo E nuevo, post-D/E: 80 comprobaciones HTTPS/API reales y
+26 de Edge real contra Nginx/Gunicorn/MySQL; no API ficticia.
+PATCH/login probado con normalización,409,400,403, sesión/credencial conservadas,
+auditoría y rollback MySQL en proceso auxiliar sin alterar producto. Una Persona,
+un Punto, un Edge administrativo inactivo, tres cuentas y tres eventos ficticios.
+Parada DB→503 genérico y reinicio completo conservaron conteos/huellas públicas
+y revisión0006; login modificado verificado tras reinicio. Servicios propios
+apagados sin-v, volumen nuevo y volúmenes previos conservados.
+
+Se comprobaron fuentes de las imágenes actuales por SHA:81 módulos backend y
+artefactos frontend recompilados. Construcción offline equivalente: dependencias
+backend de imagen local verificada y COPY de TODAS las fuentes actuales; Nginx
+limpio recibe el build frontend actual. No hubo pip/npm install ni descargas de
+capas; el primer auxiliar usó un FROM con ID mal expresado, consultó metadatos de
+registry y falló; después se corrigió a etiqueta local verificada. No se afirma
+una reconstrucción fría desde cero de los Dockerfiles con instalación nueva.
+
+Nuevas pruebas acotadas:68 backend,12 frontend,4 renderizador Azure, Ruff/ESLint
+y build PASS. AST Python sin docstrings y cuerpo JS tras encabezado idénticos;
+202 frontend y361+1 backend del corte D se reutilizan por semántica, no se presentan
+como suite global nueva. Histórico anterior:190/20/87/37, otro ensayo y volumen.
 [Detalle local](../pruebas/DOCKER_LOCAL_0010.md), [guía](../../deploy/README.md).
 Audit producción sin avisos al corte;3 paquetes dev afectados, aislados fuera del
 runtime. No declarar cero vulnerabilidades globales ni vigencia indefinida del audit.
 G6 Windows1045, C15/D08/D09/D13, D12 humana y zoom nativo200% siguen pendientes.
-Una sesión autenticada y una anónima estaban no expiradas al apagar el laboratorio;
-tokens no retenidos, servicios apagados, sin limpieza SQL manual.
+Al apagar E no quedaron sesiones autenticadas activas; las filas anónimas o
+revocadas no se limpiaron por SQL. Credenciales/clave/TLS locales nuevos se
+conservan privados fuera del repo/ZIP. La política de limpieza/retención sigue
+pendiente; no transferir secretos del ensayo a Azure.
 
 Rollback de código: conservar revisión anterior y artefactos, sin reset/force ni
 sobrescribir trabajo. DB: persistencia no equivale a backup; antes de cualquier
@@ -160,12 +187,26 @@ destino ni reutilizar cuentas/secretos Windows.
 infraestructura20/11: Ubuntu24.04.5, Docker29.10.0/Compose5.8.0 y Deploy Key lectura
 preparados; todavía sin clon. No verificado en vivo desde Macro C. Sitio propuesto
 /home/azureuser/recon-platform/source, condicionado a inspección previa.
-El acta externa con SHA real posterior a C4 permite contrastar el clon con este
-contrato. No usar el SHA histórico0009 ni hacer git pull indiscriminado al grabar.
+El encargo F autoriza Git de forma independiente solo tras F2 APTO y remoto
+sincronizado. El acta externa acredita el SHA realmente publicado y el estado
+de push; usar ese SHA congelado para el clon, nunca el corte Macro C como D/E/F
+ni git pull indiscriminado al grabar.
 Git publicado no acredita DNS/HTTPS público, recursos cloud, costos o ejecución
 de automatizaciones. No se accede a Azure desde este encargo.
 
 ---
+
+## Delta humano posterior a E — Bienvenido
+
+La fuente viva del login conserva el título izquierdo **Bienvenido**, editado
+por el responsable después del ensayo E. Solo cambió esa cadena; descripción,
+tarjeta Iniciar sesión, ojo, autenticación y estilos se conservaron. F ejecutó
+6 pruebas focales de login, lint/build y19 comprobaciones Edge del build con API
+ficticia. No atribuir el título nuevo a la imagen E ni a sus80/26 integradas:
+reconstruir el frontend desde el SHA publicado. Backend, API36, seis migraciones,
+locks y configuración Docker/Azure siguen iguales; evidencia E se reutiliza por
+huellas, sin repetir inicialización SQL, migraciones o bootstrap. No hay Azure.
+
 
 # HISTÓRICO — Cortes anteriores conservados, no estado actual
 

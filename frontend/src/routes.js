@@ -1,3 +1,4 @@
+/** Catálogo de rutas SPA y permiso requerido; el guard de cliente complementa la autorización backend. */
 const route = (path, title, page, permission = 'all', extra = {}) => ({ path, title, page, permission, ...extra })
 export const routes = [
   route('/login', 'Iniciar sesión', 'login', 'public'),

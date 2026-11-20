@@ -1,4 +1,5 @@
-"""Modelos ORM canónicos."""
+"""Mapeo ORM del catálogo PuntoAcceso.
+El modelo representa tablas; la entidad y el servicio validan cambios administrativos."""
 
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING

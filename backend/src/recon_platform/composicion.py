@@ -52,6 +52,7 @@ def crear_gestor_sesiones(clave_csrf: str) -> GestionSesiones:
 
 
 def crear_dependencias_iam() -> tuple[RepositorioIAMSQLAlchemy, UnidadTrabajoIAMSQLAlchemy]:
+    """Inyecta repositorio y unidad IAM con la misma sesión de petición."""
     return RepositorioIAMSQLAlchemy(db.session), UnidadTrabajoIAMSQLAlchemy(db.session)
 
 
@@ -66,6 +67,7 @@ def crear_consulta_eventos(reloj: Callable[[], datetime]) -> ConsultarEventosAcc
 
 
 def crear_registro_manual(reloj: Callable[[], datetime]) -> RegistrarEventoManual:
+    """Compone registro manual con repositorio, auditoría y unidad transaccional."""
     return RegistrarEventoManual(RepositorioEventosSQLAlchemy(db.session),
         RepositorioAuditoria(db.session), UnidadTrabajoEventosSQLAlchemy(db.session), reloj)
 

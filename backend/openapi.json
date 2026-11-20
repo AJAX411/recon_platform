@@ -4845,6 +4845,86 @@
           }
         }
       }
+    },
+    "/iam/usuarios/{usuario_id}/login": {
+      "patch": {
+        "summary": "Cambiar el identificador de login de una cuenta administrable",
+        "description": "Solo SUPERADMIN activo; cuenta SUPERADMIN inicial protegida. Conserva rol, estado, credencial, sesiones e identidad histórica. Normaliza espacios exteriores y mayúsculas; audita CAMBIAR_LOGIN en la misma transacción. No cambia el esquema.",
+        "security": [
+          {
+            "sesionHumana": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "login"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "login": {
+                    "type": "string",
+                    "description": "Se normaliza strip/casefold; resultado ASCII de 3 a 64 caracteres, patrón ^[a-z0-9][a-z0-9._-]{2,63}$."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cuenta actualizada o login ya vigente; solo id_usuario, login, rol y estado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuentaPlataforma"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Login o cuerpo inválido; se rechazan campos adicionales"
+          },
+          "401": {
+            "description": "Sin sesión activa o cuenta inactiva"
+          },
+          "403": {
+            "description": "CSRF inválido, rol insuficiente o cuenta SUPERADMIN protegida"
+          },
+          "404": {
+            "description": "Cuenta inexistente"
+          },
+          "503": {
+            "description": "No se pudo comprobar la sesión o administrar IAM"
+          },
+          "409": {
+            "description": "Login ya ocupado por otra cuenta"
+          }
+        }
+      }
     }
   }
 }

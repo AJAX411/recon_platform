@@ -1,4 +1,5 @@
-"""Modelos ORM canónicos."""
+"""Mapeo ORM de DispositivoEdge administrativo y su Punto asociado.
+Estado y última comunicación no acreditan funcionamiento físico integrado."""
 
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING

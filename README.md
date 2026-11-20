@@ -18,13 +18,15 @@ Incremento 0010 **ABIERTO**. G5 y la estabilización previa conservan sus aproba
 y salvedades. El ensayo Docker local aislado funcionó con HTTPS, tres roles,
 formularios y persistencia de datos ficticios; quedó apagado conservando volumen.
 G6 sobre MySQL Windows sigue pendiente por autenticación, sin nuevos intentos.
-C15/D08/D09/D13 y D12 humana continúan abiertos. Macro C prepara esta candidata y
-su publicación privada; Azure no se ha ejecutado desde este repositorio.
+C15/D08/D09/D13 y D12 humana continúan abiertos. Macro C es el corte anterior a
+D/E. La versión de esta candidata D/E/F se identifica con `git rev-parse HEAD`
+y con el SHA remoto verificado del acta externa de Macro F. Azure no se ha
+ejecutado desde esta sesión.
 [Resultados Docker y límites](./docs/pruebas/DOCKER_LOCAL_0010.md).
 
 - [Índice documental](./docs/README.md): fuentes vigentes e historia por ámbito.
 - [Arquitectura y dominios](./docs/arquitectura/README.md).
-- [Alcance y pendientes de estabilización A](./docs/incrementos/0010_ESTABILIZACION_A.md).
+- [Alcance y pendientes de estabilización A](./docs/incrementos/0010/0010_ESTABILIZACION_A.md).
 - [Validación y límites](./docs/pruebas/ESTABILIZACION_A.md).
 - [Contrato para preparar despliegue](./docs/azure/CONTRATO_DESPLIEGUE.md).
 - [Contrato HTTP OpenAPI](./backend/openapi.json).
@@ -40,7 +42,7 @@ su publicación privada; Azure no se ha ejecutado desde este repositorio.
 | [frontend/tests](./frontend/tests/) | Vitest/JSDOM, dobles explícitos, sin red real |
 | [Respaldo React local](./docs/arquitectura/README.md#respaldos-locales-no-publicados) | Conservado e ignorado; fuera del runtime, build y commit de despliegue |
 | [Candidata histórica local](./docs/arquitectura/README.md#respaldos-locales-no-publicados) | Conservada e ignorada; no se presupone en un clon nuevo |
-| [docs](./docs/) | Índice y guías actuales, sin mover ni borrar los registros anteriores |
+| [docs](./docs/) | Índice y guías actuales, historia centralizada por incremento y guías vigentes |
 
 ## Preparación y arranque local
 
@@ -108,3 +110,26 @@ Los comandos reproducibles y la diferencia entre unitarias, integración real,
 accesibilidad humana y despliegue están en
 [la guía de pruebas](./docs/pruebas/ESTABILIZACION_A.md). No ejecutar integración
 MySQL, migraciones, Git de escritura o Azure por seguir este README.
+
+## Corte histórico Macro D — ajustes finales
+
+Login institucional adaptable, control de contraseña accesible y edición del identificador de cuenta por SUPERADMIN con el caso de uso existente. El [alcance local](./docs/incrementos/0010/MACRO_D.md) distingue las comprobaciones aisladas de la integración MySQL pendiente del nuevo endpoint. No hay cambios de esquema; rol, estado y credencial mantienen operaciones separadas.
+
+- [Guía de lectura por capas lógicas](./docs/arquitectura/GUIA_LECTURA_CODIGO.md).
+
+## Corte Macro E — documentación y ensayo post-D/E
+
+[Guías docentes](./docs/arquitectura/GUIA_SUSTENTACION_CODIGO.md), higiene de37 carpetas sin fuentes y [ensayo Docker post-D/E](./docs/pruebas/MACRO_E_DOCKER.md):80 verificaciones HTTPS/API y26 de navegador real; PATCH IAM/login probado con MySQL nuevo aislado, rollback y persistencia. [Azure preparado, no desplegado](./deploy/azure/README.md). Al corte E no había nuevo commit; la publicación posterior se verifica en el acta F. Incremento0010 ABIERTO.
+
+## Macro F — título humano y puerta de publicación
+
+Se conserva **Bienvenido**, cambiado manualmente por el responsable en el panel
+izquierdo del login; la tarjeta derecha sigue en Iniciar sesión. Pruebas focales
+de login6/6, ESLint y build posteriores al cambio, más19 comprobaciones Edge con
+API ficticia, verifican texto, ojo, foco y móvil. La lógica/backend/contratos
+permanecen iguales a E; no se repiten80/26 integradas ni se reinicia MySQL.
+
+[Acta de alcance F](./docs/incrementos/0010/MACRO_F.md). El paquete externo incluye
+TRASPASO_AZURE_POST_GIT.md con SHA real solo después de commit/push verificados.
+La imagen frontend E no contiene el texto posterior: reconstruir desde el SHA
+publicado antes de desplegar. No hay despliegue Azure ni cierre del Incremento0010.

@@ -1,3 +1,4 @@
+/** Barrera de navegación compartida: consulta borradores/escrituras en curso y confirma descartes antes de abandonar. */
 import { confirmDialog } from './components/ConfirmDialog.js'
 
 export function createNavigation() {

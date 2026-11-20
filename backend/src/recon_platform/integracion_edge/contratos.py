@@ -1,4 +1,5 @@
-"""Puertos de aplicación existentes."""
+"""Puertos para metadatos administrativos Edge, consulta de Puntos y auditoría.
+No fijan protocolo de Raspberry, reconocimiento facial ni sincronización."""
 
 from typing import Protocol
 

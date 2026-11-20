@@ -44,7 +44,7 @@ aplicadas corresponden a aquellos incrementos. En 0009 no se consultó ninguna
 base real ni se aplicaron migraciones; el [README backend](../../../README.md)
 conserva los resultados históricos reportados y el cruce de rutas retiradas.
 La reorganización local y sus pruebas figuran en el
-[manifiesto 0009](../../../INCREMENTO_0009_ESTRUCTURA_UNIFORME.md).
+[manifiesto 0009](../../../../docs/incrementos/0009/backend/INCREMENTO_0009_ESTRUCTURA_UNIFORME.md).
 
 ## Catálogo documental P1-B — 17/11/2026
 
@@ -61,7 +61,7 @@ a valores históricos. No nuevas normalizaciones; se conserva trim exterior.
 La regla TipoPersona ACTIVO al actualizar permanece incluso si PATCH lo omite;
 no confundirla con activar/desactivar Persona. Campos de respuesta intactos.
 Este estrechamiento de entradas está aprobado y descrito en
-[especificación P1-B](../../../INCREMENTO_0010_P1B.md) y
+[especificación P1-B](../../../../docs/incrementos/0010/backend/INCREMENTO_0010_P1B.md) y
 [OpenAPI](../../../openapi.json). Correo aplazado, sin modificación física.
 
 Permanecen pendientes las reglas condicionales

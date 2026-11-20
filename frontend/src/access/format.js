@@ -1,3 +1,4 @@
+/** Etiquetas y filtros de Accesos: conserva jornada America/Bogota y límites UTC de consultas administrativas. */
 export const INCIDENCE_LABELS = {
   ENTRADA_REPETIDA: 'Entrada repetida',
   SALIDA_REPETIDA: 'Salida repetida',

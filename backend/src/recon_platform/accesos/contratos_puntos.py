@@ -1,4 +1,5 @@
-"""Puertos de aplicación existentes."""
+"""Puertos de administración de Puntos y su auditoría.
+Las implementaciones SQLAlchemy se inyectan desde composición."""
 
 from typing import Protocol
 

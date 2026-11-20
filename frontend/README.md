@@ -38,7 +38,10 @@ G5 pasó 177/177 Vitest, ESLint y build; backend focal: 78 pruebas únicas satis
 Herramientas locales ya verificadas, sin instalar ni acceder a red. Desde esta carpeta, bajo el controlador externo y sus guardias:
 
 ```powershell
-& 'C:/Program Files/nodejs/node.exe' './node_modules/vitest/vitest.mjs' run --config 'C:/Users/casa/Downloads/RECON_G5_G6_EJECUCION_20261119_172819/AUX/vitest.g5.config.mjs'
+# Referencia histórica G5: parametrizada para omitir la ruta personal original.
+# Definir RECON_VITEST_G5_CONFIG con la ruta del auxiliar externo autorizado.
+if (-not $env:RECON_VITEST_G5_CONFIG) { throw 'Falta la ruta externa autorizada de Vitest G5' }
+& 'C:/Program Files/nodejs/node.exe' './node_modules/vitest/vitest.mjs' run --config $env:RECON_VITEST_G5_CONFIG
 & 'C:/Program Files/nodejs/node.exe' './node_modules/eslint/bin/eslint.js' --config './eslint.config.js' .
 & 'C:/Program Files/nodejs/node.exe' './node_modules/vite/bin/vite.js' build --config './vite.config.js'
 # Preview únicamente después de verificaciones, con permiso local vigente:

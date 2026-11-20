@@ -1,3 +1,4 @@
+/** Confirmación nativa con resolución única; cancelar/destruir devuelve rechazo y restaura el foco del control invocador. */
 import { button, el } from './dom.js'
 import { openDialog } from './Dialog.js'
 let confirmationSequence = 0

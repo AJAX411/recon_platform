@@ -1,3 +1,4 @@
+/** Ciclo del dialog nativo: foco inicial/retorno, Escape, Tab y bloqueo de scroll; destruir retira listeners. */
 import { button, el } from './dom.js'
 let dialogSequence = 0
 

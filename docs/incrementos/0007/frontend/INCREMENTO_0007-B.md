@@ -4,7 +4,7 @@
 
 - Baseline vigente: **CONTEXTO MAESTRO — PROYECTO RECON FACIAL — v1.5**. Objetivo y contexto institucional CONFIRMADOS; arquitectura lógica Edge + Plataforma, monolito modular, modelo lógico y stack React/Vite/Bootstrap PROVISIONALES; detector y embedder EN INVESTIGACIÓN; contrato Edge, operación offline y despliegue PENDIENTES.
 - Resolución posterior **Independencia entre UsuarioPlataforma y Persona** (PROVISIONAL — APROBADA PARA IMPLEMENTACIÓN): sustituye únicamente la vinculación obligatoria de la sección 20 para el prototipo. Solo SUPERADMIN administra cuentas y roles. No se crea vínculo cuenta–Persona.
-- La frontera de administración web se cotejó con [`../backend/openapi.json`](../backend/openapi.json), los controladores y casos de uso de Identity/IAM, PuntoAcceso y DispositivoEdge. Los detalles de endpoint y payload son los implementados allí; no definen el protocolo ni la autenticación Edge.
+- La frontera de administración web se cotejó con [`../backend/openapi.json`](../../../../backend/openapi.json), los controladores y casos de uso de Identity/IAM, PuntoAcceso y DispositivoEdge. Los detalles de endpoint y payload son los implementados allí; no definen el protocolo ni la autenticación Edge.
 - Inicio: rama `main`, commit `e9728d6`, árbol limpio. 0007-A está cerrado técnicamente. Node.js 22.14.0 y npm 10.9.2 presentes; Node 24 LTS continúa como baseline PROVISIONAL y no se instala globalmente.
 
 ## Alcance aprobado y criterios

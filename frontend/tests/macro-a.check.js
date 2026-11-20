@@ -83,7 +83,7 @@ it.each(['SUPERADMIN', 'ADMINISTRADOR'])('Eliminar Persona %s está bloqueado si
   await waitText('Referencia interna')
   const remove = findButton('Eliminar')
   expect(remove.disabled).toBe(true)
-  expect(document.getElementById(remove.getAttribute('aria-describedby')).textContent).toContain('contrato de anonimización')
+  expect(document.getElementById(remove.getAttribute('aria-describedby')).textContent).toContain('política aprobada')
   click(remove)
   expect(writes(fetcher)).toHaveLength(0)
   click(findButton('Desactivar')); click(dialogButton()); await waitText('Operación confirmada')

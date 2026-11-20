@@ -1,4 +1,5 @@
-"""Repositorios SQLAlchemy sin commits propios."""
+"""Adaptador SQLAlchemy de eventos, búsquedas y proyecciones por rol.
+Realiza bloqueos y flush; el servicio posee la transacción y confirma o revierte."""
 
 from datetime import UTC, datetime
 

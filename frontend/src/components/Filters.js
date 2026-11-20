@@ -1,3 +1,4 @@
+/** Filtros y paginación reutilizables; el formulario entrega valores a la vista sin ejecutar SQL o mutar el negocio. */
 import { button, el, message } from './dom.js'
 
 export function filters(specs, values, onApply, onClear) {

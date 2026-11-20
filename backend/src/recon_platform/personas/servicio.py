@@ -119,6 +119,7 @@ class AdministrarPersonas:
             raise
 
     def registrar(self, *, actor: ActorPersonas, persona: Persona) -> Persona:
+        """Registra Persona y auditoría juntas; el alta no realiza captura biométrica."""
         _exigir_administrador(actor)
         def operacion():
             registrada = _registrar(persona, self.personas, self.tipos)
@@ -160,6 +161,7 @@ class AdministrarPersonas:
 
     def actualizar(self, *, actor: ActorPersonas, id_persona: int,
                    datos: dict[str, object]) -> Persona:
+        """Valida el cambio administrativo y unicidad; conserva identidad e historial."""
         _exigir_administrador(actor)
         def operacion():
             anterior = self.consultar(actor=actor, id_persona=id_persona)

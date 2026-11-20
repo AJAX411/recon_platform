@@ -1,3 +1,4 @@
+/** Router History API: intercepta enlaces internos, consulta bloqueadores y desmonta la vista anterior; respeta atrás/adelante. */
 import { matchRoute } from './routes.js'
 
 export function createRouter(render, { beforeLeave = () => true } = {}) {

@@ -535,6 +535,10 @@ def test_solo_superadmin_accede_a_rutas_administrativas(entorno, rol_actor: str)
         json={"rol": "OPERADOR"}, headers={"X-CSRF-Token": csrf},
     ).status_code == 403
     assert otro.patch(
+        f"/api/v1/iam/usuarios/{operador_id}/login",
+        json={"login": "indebido.login"}, headers={"X-CSRF-Token": csrf},
+    ).status_code == 403
+    assert otro.patch(
         f"/api/v1/iam/usuarios/{operador_id}/estado",
         json={"estado": "INACTIVO"}, headers={"X-CSRF-Token": csrf},
     ).status_code == 403
@@ -573,7 +577,7 @@ def test_admin_paginacion_detalle_y_cuenta_inicial_protegida(entorno) -> None:
         assert cliente.get(f"/api/v1/iam/usuarios?{consulta}").status_code == 400
     assert cliente.get("/api/v1/iam/usuarios/99999").status_code == 404
     cabeceras = {"X-CSRF-Token": csrf}
-    for sufijo, cuerpo in (("rol", {"rol": "OPERADOR"}),
+    for sufijo, cuerpo in (("login", {"login": "nuevo.login"}), ("rol", {"rol": "OPERADOR"}),
                            ("estado", {"estado": "INACTIVO"})):
         assert cliente.patch(
             f"/api/v1/iam/usuarios/{admin_id}/{sufijo}", json=cuerpo,
@@ -642,3 +646,56 @@ def test_admin_respeta_configuracion_https_y_host_local(entorno) -> None:
     ).status_code == 403
     aplicacion.config["RECON_COOKIE_SECURE"] = True
     assert cliente.get("/api/v1/iam/roles").status_code == 403
+
+
+def test_editar_login_persiste_audita_sin_cambiar_rol_estado_ni_sesion(entorno):
+    app, cliente, _, admin_id, operador_id = entorno
+    cuenta = app.test_client()
+    assert _login(cuenta, "operador.ficticio")[0] == 200
+    _, csrf = _login(cliente, "admin.ficticio")
+    ruta = f"/api/v1/iam/usuarios/{operador_id}/login"
+    headers = {"X-CSRF-Token": csrf}
+    respuesta = cliente.patch(ruta, json={"login": " NUEVO.LOGIN "}, headers=headers)
+    assert respuesta.status_code == 200
+    assert respuesta.headers["Cache-Control"] == "no-store"
+    assert respuesta.json == {"id_usuario": operador_id, "login": "nuevo.login", "rol": "OPERADOR", "estado": "ACTIVO"}
+    assert cliente.get(f"/api/v1/iam/usuarios/{operador_id}").json == respuesta.json
+    assert cuenta.get("/api/v1/auth/me").json["login"] == "nuevo.login"
+    assert _login(app.test_client(), "nuevo.login")[0] == 200
+    assert _login(app.test_client(), "operador.ficticio")[0] == 401
+    assert cliente.patch(ruta, json={"login": "nuevo.login"}, headers=headers).status_code == 200
+    with app.app_context():
+        eventos = db.session.scalars(select(AuditoriaIAMModelo).where(AuditoriaIAMModelo.accion == "CAMBIAR_LOGIN")).all()
+        assert len(eventos) == 1
+        assert eventos[0].actor_id == admin_id and eventos[0].usuario_id == operador_id
+        assert eventos[0].anterior == "operador.ficticio" and eventos[0].nuevo == "nuevo.login"
+
+
+@pytest.mark.parametrize("cuerpo", [{}, {"login": None}, {"login": []}, {"login": "ab"},
+    {"login": "a" * 65}, {"login": "no válido"}, {"login": "otro.login", "rol": "ADMINISTRADOR"}])
+def test_editar_login_valida_cuerpo_y_csrf_sin_mutar(entorno, cuerpo):
+    _, cliente, _, _, operador_id = entorno
+    ruta = f"/api/v1/iam/usuarios/{operador_id}/login"
+    assert cliente.patch(ruta, json={"login": "otro.login"}).status_code == 403
+    _, csrf = _login(cliente, "admin.ficticio")
+    assert cliente.patch(ruta, json=cuerpo, headers={"X-CSRF-Token": csrf}).status_code == 400
+    assert cliente.get(f"/api/v1/iam/usuarios/{operador_id}").json["login"] == "operador.ficticio"
+
+
+def test_editar_login_duplicado_y_fallo_auditoria_revierten(entorno, monkeypatch):
+    app, cliente, _, _, operador_id = entorno
+    _, csrf = _login(cliente, "admin.ficticio")
+    ruta = f"/api/v1/iam/usuarios/{operador_id}/login"
+    headers = {"X-CSRF-Token": csrf}
+    assert cliente.patch(ruta, json={"login": "ADMIN.FICTICIO"}, headers=headers).status_code == 409
+
+    def fallar(*_args, **_kwargs):
+        raise RuntimeError("detalle-privado-no-publicable")
+
+    monkeypatch.setattr(RepositorioIAMSQLAlchemy, "auditar", fallar)
+    respuesta = cliente.patch(ruta, json={"login": "rollback.login"}, headers=headers)
+    assert respuesta.status_code == 503
+    assert "detalle-privado" not in respuesta.get_data(as_text=True)
+    with app.app_context():
+        assert db.session.get(UsuarioPlataformaModelo, operador_id).login == "operador.ficticio"
+        assert db.session.scalar(select(AuditoriaIAMModelo.id_auditoria).where(AuditoriaIAMModelo.accion == "CAMBIAR_LOGIN")) is None

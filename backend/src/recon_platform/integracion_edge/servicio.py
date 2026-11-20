@@ -1,4 +1,5 @@
-"""Servicios y casos de uso existentes."""
+"""Casos de uso de alta, nombre, estado y modo administrativos Edge.
+Validan permisos/referencias y coordinan auditoría; no ejecutan hardware."""
 
 import json
 
@@ -29,6 +30,7 @@ class PermisoDispositivoDenegado(ValueError):
 
 
 class AdministrarDispositivos:
+    """Administra metadatos del nodo, sin conexión física ni pipeline facial."""
     def __init__(self, dispositivos: RepositorioDispositivos, puntos: ConsultaPuntos,
                  auditoria: Auditoria, unidad: UnidadTrabajo) -> None:
         self.dispositivos, self.puntos = dispositivos, puntos

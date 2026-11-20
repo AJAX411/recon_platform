@@ -1,3 +1,4 @@
+/** Inicio renderizado desde el store de resumen; mantiene métricas administrativas y vista reducida de OPERADOR. */
 import { administrative } from '../auth/permissions.js'
 import { formatBogota } from '../access/format.js'
 import { approximateTime } from '../access/projections.js'
@@ -19,7 +20,7 @@ export function mountDashboard({ container, dashboard, session }) {
     if (!data) return
     const admin = administrative(session.getState().user)
     body.append(el('div', { className: 'dashboard-context' },
-      el('strong', {}, 'Jornada ' + formatJornada(data.jornada) + ' · Bogotá'),
+      el('strong', {}, 'Jornada ' + formatJornada(data.jornada)),
       el('p', { role: 'status', className: 'dashboard-meta' },
         (status === 'error' ? 'Datos desactualizados' : status === 'loading' ? 'Actualizando datos anteriores' : 'Última lectura')
         + ': ' + (admin ? formatBogota(data.generado_en) : approximateTime(data.generado_en) + ' (hora aproximada)'))))

@@ -1,4 +1,4 @@
-# Checklist de transferencia Azure — no ejecutado por Macro C
+# Checklist de transferencia Azure — Macro E, NO desplegado
 
 Fuente de infraestructura: informe aportado20/11/2026, no consultado en vivo.
 Contrato canónico: [VIGENTE](./CONTRATO_DESPLIEGUE.md).
@@ -6,7 +6,7 @@ Contrato canónico: [VIGENTE](./CONTRATO_DESPLIEGUE.md).
 | Puerta | Comprobación y criterio antes de avanzar |
 |---|---|
 | Ventana/costos | Responsable verifica VM, saldo y horario10:00–11:30 Bogotá; primera ejecución automática no acreditada. Ajustar con permiso antes de grabar/evaluar |
-|19 versión | Usar SHA remoto real del acta externa C5; Deploy Key lectura. Inspeccionar /home/azureuser/recon-platform/source vacío/propietario/permisos antes de clonar. STOP si existe otro árbol o SHA distinto |
+|19 versión | Usar SHA remoto real del acta TRASPASO_AZURE_POST_GIT de Macro F; el SHA C5 anterior no contiene D/E/F; Deploy Key lectura. Inspeccionar /home/azureuser/recon-platform/source vacío/propietario/permisos antes de clonar. STOP si existe otro árbol o SHA distinto |
 |19 código | Monorepo backend/frontend Vanilla; comprobar git rev-parse HEAD y status sin deriva; revisar Dockerfiles/Compose/lock desde ese mismo SHA |
 |20 DB | Proyecto/volumen/base NUEVOS; secretos NUEVOS y privados Ubuntu. Nombres lógicos del adaptador son fijos; no Windows ni volumen del laboratorio. Identidad/privilegios/vacío antes de upgrade; backup si ya hay datos |
 |21 backend | Build Linux, WSGI, CLI *_FILE explícita; seis revisiones separadas del arranque; bootstrap oficial con prompts ocultos. Liveness no es readiness de esquema/login |
@@ -27,3 +27,9 @@ clon estable;20–23 siguen pendientes hasta comprobación real. Confirmar minut
 de entrega en aula (se comunicó21/11/2026 antes23:59; no es evidencia del aula).
 G6 Windows, cuatro reservas, D12, deuda dev y eliminación Persona permanecen.
 Incremento0010 ABIERTO; despliegue público y cierre exigen revisión separada.
+
+## Variante preparada en Macro E
+
+[Guía y configuración Azure separada](../../deploy/azure/README.md): perfil explícito, FQDN exacto y render fuera del repo; TLS externo, bind loopback por defecto y API/DB internos. Config/nginx-t sintéticos PASS; DNS/TLS público/NSG/permisos POSIX/rendimiento cloud NO EJECUTADOS. Contrato actual:36 operaciones OpenAPI; PATCH/login validado en el laboratorio Docker nuevo, no en Azure.
+
+Macro F conserva Bienvenido y valida su build focal. La imagen E anterior no incorpora esa edición posterior: reconstruir frontend desde el SHA congelado. No confundir las19 verificaciones F con API ficticia con las26 E reales; no se repiten DB/migraciones ni se valida cloud en F.

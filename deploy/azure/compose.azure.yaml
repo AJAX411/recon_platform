@@ -1,0 +1,106 @@
+# Variante independiente: no se carga con compose.yaml local; perfil explícito obligatorio.
+name: recon-azure-prepared
+services:
+  db:
+    profiles: [approved-azure-runtime]
+    mem_limit: ${RECON_AZURE_DB_MEMORY:-1536m}
+    cpus: ${RECON_AZURE_DB_CPUS:-1.0}
+    image: ${RECON_MYSQL_IMAGE:-mysql:8.4@sha256:24989179f58856db763f418010c1169fecc944e3ec1ea7e921572d83eb070f70}
+    environment:
+      MYSQL_DATABASE: recon_container_0010
+      MYSQL_USER: recon_container_app
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MYSQL_PASSWORD_FILE: /run/secrets/db_app_password
+    secrets: [db_root_password, db_app_password]
+    volumes:
+      - mysql_isolated:/var/lib/mysql
+    networks: [data]
+    healthcheck:
+      test: [CMD, mysqladmin, ping, -h, 127.0.0.1, --silent]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    restart: "no"
+
+  backend:
+    profiles: [approved-azure-runtime]
+    mem_limit: ${RECON_AZURE_API_MEMORY:-512m}
+    cpus: ${RECON_AZURE_API_CPUS:-0.75}
+    image: ${RECON_AZURE_BACKEND_IMAGE:?Imagen backend del SHA revisado requerida}
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+      args:
+        PYTHON_IMAGE: ${RECON_PYTHON_IMAGE:-python:3.14.10-slim-bookworm@sha256:1faf2343e747208b2a36e5f2b5ff908ec3b2d0078a6a7bfe73b535698fe83909}
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: recon_container_0010
+      DB_USER: recon_container_app
+      DB_PASSWORD_FILE: /run/secrets/db_app_password
+      SECRET_KEY_FILE: /run/secrets/session_key
+      RECON_SESSION_COOKIE_SECURE: "1"
+    secrets: [db_app_password, session_key]
+    networks: [web, data]
+    depends_on:
+      db:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: "no"
+
+  frontend:
+    profiles: [approved-azure-runtime]
+    mem_limit: ${RECON_AZURE_WEB_MEMORY:-128m}
+    cpus: ${RECON_AZURE_WEB_CPUS:-0.25}
+    image: ${RECON_AZURE_FRONTEND_IMAGE:?Imagen frontend del SHA revisado requerida}
+    build:
+      context: ../..
+      dockerfile: frontend/Dockerfile
+      args:
+        NODE_IMAGE: ${RECON_NODE_IMAGE:-node:26.13.1-bookworm-slim@sha256:18a166e2d50578afe933434857ed2d9059bd1aa398a223e9c89eb4302354f079}
+        NGINX_IMAGE: ${RECON_NGINX_IMAGE:-nginx:1.30.7-alpine@sha256:4d1d4ce08432dc7dfe4af762cb224ce6b5273ae878f41e020ea2425d02ea91a4}
+    ports:
+      - "${RECON_AZURE_BIND_IP:-127.0.0.1}:443:8443"
+    secrets: [tls_certificate, tls_private_key]
+    volumes:
+      - ${RECON_AZURE_NGINX_CONFIG_FILE:?Config renderizada externa requerida}:/etc/nginx/nginx.conf:ro
+    networks: [web, entrada_azure]
+    depends_on:
+      backend:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: "no"
+
+networks:
+  web:
+    internal: true
+  data:
+    internal: true
+  # Solo Nginx tiene entrada. Default loopback; ampliar bind/NSG requiere permiso cloud.
+  entrada_azure:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.host_binding_ipv4: "${RECON_AZURE_BIND_IP:-127.0.0.1}"
+      com.docker.network.bridge.enable_ip_masquerade: "false"
+volumes:
+  mysql_isolated:
+secrets:
+  db_root_password:
+    file: ${RECON_DB_ROOT_PASSWORD_FILE:?Ruta externa privada requerida}
+  db_app_password:
+    file: ${RECON_DB_APP_PASSWORD_FILE:?Ruta externa privada requerida}
+  session_key:
+    file: ${RECON_SESSION_KEY_FILE:?Ruta externa privada requerida}
+  tls_certificate:
+    file: ${RECON_TLS_CERT_FILE:?Certificado local verificado requerido}
+  tls_private_key:
+    file: ${RECON_TLS_KEY_FILE:?Ruta externa privada requerida}

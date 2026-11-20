@@ -1,3 +1,4 @@
+/** Comprueba las claves permitidas de OPERADOR y muestra hora aproximada; no promete anonimato absoluto. */
 import { formatBogota } from './format.js'
 
 export const reducedFields = ['tipo_movimiento', 'resultado', 'hora_local_aproximada']

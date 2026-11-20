@@ -1,3 +1,4 @@
+/** Cliente HTTP único: cookie same-origin, CSRF en memoria y lista cerrada de escrituras. Un resultado incierto no se reintenta automáticamente. */
 export class ApiError extends Error {
   constructor(message, status, writeAttempted = false) {
     super(message)
@@ -21,7 +22,7 @@ export function createHttp(fetcher = (...args) => globalThis.fetch(...args)) {
     const mutating = !['GET', 'HEAD'].includes(verb)
     // Lista cerrada de operaciones existentes. No hay DELETE ni escritura genérica.
     const allowedPost = /^\/(auth\/(login|logout)|personas|iam\/usuarios|puntos-acceso|dispositivos-edge|eventos-acceso\/manual)$/
-    const allowedPatch = /^\/(personas\/[1-9]\d*(\/estado)?|iam\/usuarios\/[1-9]\d*\/(rol|estado)|puntos-acceso\/[1-9]\d*(\/estado)?|dispositivos-edge\/[1-9]\d*(\/(estado|modo))?)$/
+    const allowedPatch = /^\/(personas\/[1-9]\d*(\/estado)?|iam\/usuarios\/[1-9]\d*\/(login|rol|estado)|puntos-acceso\/[1-9]\d*(\/estado)?|dispositivos-edge\/[1-9]\d*(\/(estado|modo))?)$/
     if (mutating && !(verb === 'POST' && allowedPost.test(path) || verb === 'PATCH' && allowedPatch.test(path))) {
       throw new ApiError('Método o ruta de escritura no autorizados.', 0, false)
     }

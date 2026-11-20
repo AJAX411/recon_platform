@@ -1,4 +1,5 @@
-"""Puertos de aplicación existentes."""
+"""Puertos del registro manual: persistencia, auditoría y transacción.
+El caso de uso coordina bloqueo, idempotencia y commit sin depender del ORM."""
 
 from datetime import datetime
 from typing import Protocol
