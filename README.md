@@ -12,6 +12,11 @@ modular por seis dominios, con SQLAlchemy y persistencia MySQL. Persona y cuenta
 UsuarioPlataforma son entidades independientes. No hay reconocimiento facial,
 enrolamiento por foto ni hardware Edge integrado en esta aplicación web.
 
+Videos explicativos sobre el proyecto y su implementación (despliegue en Azure) en Azure:
+
+-Link video explicativo: https://youtu.be/W8GlAB63agY
+-Link video explicativo despliegue en Azure: https://youtu.be/8uERaAx0eiM
+
 ## Estado y documentación
 
 Incremento 0010 **ABIERTO**. G5 y la estabilización previa conservan sus aprobaciones
