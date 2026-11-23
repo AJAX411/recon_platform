@@ -17,6 +17,12 @@ Videos explicativos sobre el proyecto y su implementación (despliegue en Azure)
 -Link video explicativo: https://youtu.be/W8GlAB63agY
 -Link video explicativo despliegue en Azure: https://youtu.be/8uERaAx0eiM
 
+#CUENTA ADMINISTRADOR
+usuario: pedro.admin  contraseña: ryMG6ta1kensR1W0c2Wi0VJo45b6EVj9
+
+#CUENTA FICTISIA OPERADOR
+usuario: thomas.operador contraseña: 1kensR1W0c2Wi0VJo45b6EVj9
+
 ## Estado y documentación
 
 Incremento 0010 **ABIERTO**. G5 y la estabilización previa conservan sus aprobaciones
